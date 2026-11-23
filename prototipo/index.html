@@ -1,0 +1,785 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Geopay — Gateway de Pagamento Pix</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#05080F;--ink-2:#0B111D;--ink-3:#121A2B;--ink-4:#1A2338;--line:#1F2A42;--line-2:#2D3A58;
+  --text:#EEF2FA;--muted:#8792AC;--dim:#5A6582;
+  --lime:#C6F432;--lime-d:#9CC41F;--cyan:#47D7FF;--coral:#FF7A59;--violet:#8B7CFF;
+  --r:22px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--ink);color:var(--text);font-family:"Space Grotesk",system-ui,sans-serif;line-height:1.5;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+.mono{font-family:"JetBrains Mono",monospace}
+.wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+section{position:relative;padding:120px 0}
+.topo{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.z{position:relative;z-index:1}
+.eyebrow{font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--lime);display:inline-flex;gap:10px;align-items:center}
+.eyebrow .n{color:var(--dim)}
+.eyebrow::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--lime);box-shadow:0 0 12px var(--lime)}
+h1{font-size:clamp(44px,7vw,96px);line-height:.95;letter-spacing:-.045em;font-weight:700}
+h2{font-size:clamp(34px,4.6vw,64px);line-height:1;letter-spacing:-.035em;font-weight:700;margin:18px 0 20px}
+.lead{color:var(--muted);font-size:18px;max-width:580px}
+.hl{background:linear-gradient(95deg,var(--lime) 10%,var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:16px 26px;border-radius:999px;font-weight:600;font-size:15px;transition:.2s;cursor:pointer;border:0;font-family:inherit}
+.btn-primary{background:var(--lime);color:var(--ink)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 14px 40px -10px var(--lime)}
+.btn-ghost{border:1px solid var(--line-2);color:var(--text);background:rgba(255,255,255,.02)}
+.btn-ghost:hover{border-color:var(--muted)}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:40px;flex-wrap:wrap;margin-bottom:56px}
+.head .lead{max-width:440px}
+
+/* NAV */
+.notice{background:var(--lime);color:var(--ink);font-size:13px;text-align:center;padding:9px 16px;font-weight:500}
+.notice b{font-weight:700}
+nav{position:sticky;top:0;z-index:60;backdrop-filter:blur(16px);background:rgba(5,8,15,.75);border-bottom:1px solid rgba(31,42,66,.7)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:74px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:22px;letter-spacing:-.03em}
+.logo svg{width:32px;height:32px}
+.menu{display:flex;gap:32px;font-size:15px;color:var(--muted)}
+.menu a:hover{color:var(--text)}
+.nav-cta{display:flex;gap:10px;align-items:center}
+.nav-cta .btn{padding:11px 20px}
+
+/* HERO */
+.hero{padding:70px 0 0;overflow:hidden;min-height:calc(100vh - 110px)}
+.hero::before{content:"";position:absolute;inset:-20% -10% auto auto;width:900px;height:900px;background:radial-gradient(closest-side,rgba(198,244,50,.18),transparent 70%);z-index:0}
+.hero::after{content:"";position:absolute;left:-200px;bottom:-200px;width:700px;height:700px;background:radial-gradient(closest-side,rgba(71,215,255,.12),transparent 70%);z-index:0}
+.hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center}
+.hero h1{margin:24px 0 26px}
+.hero-actions{display:flex;gap:12px;margin:36px 0 34px;flex-wrap:wrap}
+.proof{display:flex;align-items:center;gap:16px;color:var(--muted);font-size:14px}
+.avatars{display:flex}
+.avatars span{width:36px;height:36px;border-radius:50%;border:2px solid var(--ink);margin-left:-10px;display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--ink)}
+.avatars span:first-child{margin-left:0}
+.stars{color:var(--lime);letter-spacing:2px}
+
+.radar{position:relative;aspect-ratio:1;max-width:560px;margin-left:auto;width:100%}
+.radar svg.rings{position:absolute;inset:0;width:100%;height:100%}
+.sweep{position:absolute;inset:6%;border-radius:50%;background:conic-gradient(from 0deg,rgba(198,244,50,.28),transparent 22%);animation:spin 6s linear infinite;mask:radial-gradient(circle,transparent 18%,#000 19%)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ping{position:absolute;width:12px;height:12px;border-radius:50%;background:var(--lime);box-shadow:0 0 0 0 rgba(198,244,50,.6);animation:ping 2.4s infinite}
+.ping.c{background:var(--cyan);box-shadow:0 0 0 0 rgba(71,215,255,.6)}
+@keyframes ping{70%{box-shadow:0 0 0 18px rgba(198,244,50,0)}100%{box-shadow:0 0 0 0 rgba(198,244,50,0)}}
+.core{position:absolute;inset:34%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#2a3550,var(--ink-2));border:1px solid var(--line-2);display:grid;place-items:center;text-align:center;box-shadow:0 0 80px -10px rgba(198,244,50,.35),inset 0 0 40px rgba(0,0,0,.6)}
+.core b{font-size:clamp(20px,2.6vw,30px);letter-spacing:-.03em;display:block}
+.core small{font-family:"JetBrains Mono";font-size:10px;color:var(--lime);letter-spacing:.14em}
+.float{position:absolute;background:rgba(18,26,43,.88);backdrop-filter:blur(10px);border:1px solid var(--line-2);border-radius:16px;padding:12px 16px;font-size:13px;box-shadow:0 20px 50px -20px #000;display:flex;gap:12px;align-items:center;white-space:nowrap}
+.float .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(198,244,50,.12);color:var(--lime);font-weight:700}
+.float small{display:block;color:var(--muted);font-size:11px}
+.f1{top:34%;left:-8%;animation:bob 5s ease-in-out infinite}
+.f2{top:44%;right:-6%;animation:bob 6s ease-in-out infinite .8s}
+.f3{bottom:6%;left:4%;animation:bob 5.5s ease-in-out infinite 1.4s}
+@keyframes bob{50%{transform:translateY(-10px)}}
+
+.hero-stats{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);margin-top:70px}
+.hero-stats div{padding:30px 24px;border-right:1px solid var(--line)}
+.hero-stats div:last-child{border:0}
+.hero-stats b{font-size:clamp(28px,3vw,42px);letter-spacing:-.04em;display:block}
+.hero-stats span{color:var(--muted);font-size:13px;font-family:"JetBrains Mono"}
+
+.radar svg.br{position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 0 40px rgba(198,244,50,.12))}
+.arc{stroke-dasharray:3 120;stroke-dashoffset:120;animation:flow 3.6s linear infinite;opacity:.9}
+@keyframes flow{to{stroke-dashoffset:0}}
+.radar .ping{transform:translate(-50%,-50%);width:9px;height:9px}
+.radar .core{inset:auto;right:-2%;bottom:20%;padding:14px 18px;border-radius:16px;text-align:left;display:block;background:rgba(18,26,43,.9);backdrop-filter:blur(10px)}
+.radar .f2{top:22%;right:-4%}
+.radar .f3{bottom:2%;left:0}
+.uf{fill:url(#dots);stroke:#3a4c74;stroke-width:.25;stroke-linejoin:round;transition:.3s}
+.ufs path{filter:none}
+.uf[style*="--h:0."]{fill:rgba(198,244,50,var(--h));stroke:rgba(198,244,50,.7)}
+.uf:hover{fill:var(--lime);stroke:var(--lime)}
+.ufs{filter:drop-shadow(0 0 1.5px rgba(198,244,50,.25))}
+.br-label{position:absolute;top:2%;left:0;display:flex;gap:12px;align-items:center;font-family:"JetBrains Mono"}
+.br-label b{font-size:22px;letter-spacing:.3em;display:block;color:var(--text)}
+.br-label small{font-size:11px;color:var(--muted);letter-spacing:.08em}
+.flag{width:40px;height:28px;border-radius:5px;background:#1d9b4a;display:grid;place-items:center;flex:none}
+.flag i{width:28px;height:18px;background:#f5d000;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);display:grid;place-items:center;position:relative}
+.flag i::after{content:"";position:absolute;inset:4px 9px;border-radius:50%;background:#123c8c}
+/* TRUST BAR */
+.trust{padding:34px 0;border-block:1px solid var(--line);background:var(--ink-2)}
+.trust .wrap{display:flex;align-items:center;gap:40px;flex-wrap:wrap;justify-content:space-between}
+.trust p{color:var(--dim);font-size:12px;font-family:"JetBrains Mono";letter-spacing:.12em;text-transform:uppercase}
+.badges{display:flex;gap:14px;flex-wrap:wrap}
+.badge{display:flex;align-items:center;gap:10px;padding:10px 16px;border:1px solid var(--line);border-radius:12px;font-size:13px;color:var(--muted)}
+.badge i{font-style:normal;color:var(--lime);font-size:16px}
+
+/* SOLUTIONS horizontal */
+.sol-track{display:flex;gap:18px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:20px;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+.sol{flex:0 0 340px;scroll-snap-align:start;background:var(--ink-2);border:1px solid var(--line);border-radius:var(--r);padding:30px;min-height:400px;display:flex;flex-direction:column;position:relative;overflow:hidden;transition:.3s}
+.sol:hover{border-color:var(--lime);transform:translateY(-4px)}
+.sol:hover .sol-arrow{background:var(--lime);color:var(--ink)}
+.sol .num{font-family:"JetBrains Mono";color:var(--dim);font-size:13px}
+.sol .cat{font-family:"JetBrains Mono";font-size:11px;letter-spacing:.14em;color:var(--lime);margin-top:auto}
+.sol h3{font-size:28px;letter-spacing:-.03em;line-height:1.05;margin:10px 0 12px}
+.sol p{color:var(--muted);font-size:15px}
+.sol .metric{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);margin-top:24px;padding-top:18px;font-family:"JetBrains Mono";font-size:13px}
+.sol-arrow{width:38px;height:38px;border-radius:50%;border:1px solid var(--line-2);display:grid;place-items:center;transition:.2s}
+.sol .art{height:120px;margin:22px 0 6px;border-radius:14px;background:var(--ink-3);border:1px solid var(--line);display:grid;place-items:center;position:relative;overflow:hidden}
+.sol-nav{display:flex;gap:10px}
+.sol-nav button{width:48px;height:48px;border-radius:50%;border:1px solid var(--line-2);background:transparent;color:var(--text);font-size:18px;cursor:pointer}
+.sol-nav button:hover{background:var(--lime);color:var(--ink);border-color:var(--lime)}
+
+/* LIVE OPS */
+.ops{background:linear-gradient(180deg,var(--ink),var(--ink-2));border-block:1px solid var(--line)}
+.ops-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+.panel{background:var(--ink-3);border:1px solid var(--line);border-radius:var(--r);padding:24px;position:relative;overflow:hidden}
+.panel .lbl{font-family:"JetBrains Mono";font-size:11px;letter-spacing:.14em;color:var(--muted);display:flex;justify-content:space-between}
+.live{color:var(--lime);display:inline-flex;gap:6px;align-items:center}
+.live::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--lime);animation:blink 1.2s infinite}
+@keyframes blink{50%{opacity:.2}}
+.p-vol{grid-column:span 7}
+.p-vol .big{font-size:clamp(40px,5vw,68px);font-weight:700;letter-spacing:-.05em;margin:10px 0}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:10px}
+.kpis div{background:var(--ink-2);border:1px solid var(--line);border-radius:14px;padding:14px}
+.kpis b{font-size:22px;display:block;letter-spacing:-.02em}
+.kpis span{font-size:11px;color:var(--muted);font-family:"JetBrains Mono"}
+.spark{width:100%;height:90px;margin-top:18px}
+.p-stream{grid-column:span 5;grid-row:span 2}
+.stream{margin-top:14px;display:flex;flex-direction:column;gap:8px;height:430px;overflow:hidden;mask:linear-gradient(#000 75%,transparent)}
+.row{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--ink-2);border:1px solid var(--line);border-radius:12px;font-size:14px;animation:in .5s ease}
+@keyframes in{from{opacity:0;transform:translateY(-12px)}}
+.row .t{font-family:"JetBrains Mono";font-size:11px;color:var(--muted)}
+.row .tag{font-family:"JetBrains Mono";font-size:10px;padding:3px 8px;border-radius:6px;background:rgba(198,244,50,.12);color:var(--lime);margin-right:10px}
+.row .tag.b{background:rgba(71,215,255,.12);color:var(--cyan)}
+.row b{color:var(--lime)}
+.p-map{grid-column:span 4}
+.p-uptime{grid-column:span 3}
+.uptime{display:flex;gap:3px;margin:18px 0 10px;height:44px;align-items:stretch}
+.uptime i{flex:1;background:var(--lime);border-radius:2px;opacity:.85}
+.uptime i.w{background:#e9c63a}
+
+/* DEV */
+.dev-grid{display:grid;grid-template-columns:.85fr 1.15fr;gap:60px;align-items:center}
+.dx-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin:34px 0}
+.dx-stats div{border:1px solid var(--line);border-radius:16px;padding:18px;background:var(--ink-2)}
+.dx-stats b{font-size:32px;letter-spacing:-.04em;display:block;color:var(--lime)}
+.dx-stats span{color:var(--muted);font-size:12px;font-family:"JetBrains Mono"}
+.checks{list-style:none;display:grid;gap:12px}
+.checks li{display:flex;gap:12px;color:var(--muted);font-size:15px}
+.checks li::before{content:"✓";color:var(--ink);background:var(--lime);width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;flex:none;font-weight:700}
+.code{background:#03060C;border:1px solid var(--line-2);border-radius:var(--r);overflow:hidden;font-family:"JetBrains Mono";font-size:13.5px;box-shadow:0 50px 100px -40px rgba(198,244,50,.25)}
+.code-top{display:flex;align-items:center;gap:8px;padding:14px 18px;border-bottom:1px solid var(--line);color:var(--muted);font-size:12px;flex-wrap:wrap}
+.code-top i{width:11px;height:11px;border-radius:50%;background:var(--line-2)}
+.code-top .ep{margin-left:8px;color:var(--text)}
+.code-top .ep em{font-style:normal;color:var(--ink);background:var(--lime);padding:2px 7px;border-radius:5px;margin-right:6px;font-size:11px}
+.tabs{display:flex;gap:4px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.tabs button{background:none;border:0;color:var(--muted);font-family:inherit;font-size:12px;padding:6px 12px;border-radius:8px;cursor:pointer}
+.tabs button.on{background:var(--ink-4);color:var(--text)}
+pre{padding:22px;line-height:1.75;overflow-x:auto;color:#c9d3e6;min-height:300px}
+.k{color:var(--cyan)}.s{color:var(--lime)}.c{color:#4f5a76}.n{color:var(--coral)}
+.resp{display:flex;align-items:center;gap:18px;padding:14px 18px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.resp .ok{color:var(--lime)}
+.resp button{margin-left:auto;background:var(--lime);color:var(--ink);border:0;border-radius:8px;padding:8px 14px;font-family:inherit;font-weight:700;font-size:12px;cursor:pointer}
+
+/* INTEGRATIONS */
+.int-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.int{border:1px solid var(--line);border-radius:18px;padding:24px;background:var(--ink-2);transition:.2s}
+.int:hover{border-color:var(--line-2);background:var(--ink-3)}
+.int .lg{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-weight:700;font-size:18px;margin-bottom:18px}
+.int h4{font-size:18px;margin-bottom:6px}
+.int p{color:var(--muted);font-size:14px}
+.int .st{font-family:"JetBrains Mono";font-size:11px;color:var(--lime);margin-top:14px;display:block}
+.int .st.soon{color:var(--dim)}
+
+/* PRICING */
+.price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.price{background:var(--ink-2);border:1px solid var(--line);border-radius:var(--r);padding:36px;display:flex;flex-direction:column}
+.price.feat{background:radial-gradient(400px 260px at 50% 0%,rgba(198,244,50,.16),transparent),var(--ink-2);border-color:rgba(198,244,50,.55);position:relative;transform:translateY(-12px)}
+.price.feat::after{content:"MAIS ESCOLHIDO";position:absolute;top:-12px;left:36px;background:var(--lime);color:var(--ink);font-size:11px;font-weight:700;padding:5px 12px;border-radius:999px;font-family:"JetBrains Mono";letter-spacing:.1em}
+.price .pl{font-family:"JetBrains Mono";font-size:12px;letter-spacing:.14em;color:var(--muted)}
+.price .fee{font-size:60px;font-weight:700;letter-spacing:-.05em;margin:14px 0 2px;line-height:1}
+.price .fee small{font-size:16px;color:var(--muted);font-weight:500;letter-spacing:0}
+.price .sub{color:var(--muted);font-size:14px}
+.price ul{list-style:none;margin:26px 0 30px;display:grid;gap:13px;font-size:15px;flex:1}
+.price ul li{display:flex;gap:10px}
+.price ul li::before{content:"✓";color:var(--lime);font-weight:700}
+.price .btn{justify-content:center}
+
+/* COMPARE */
+.cmp{width:100%;border-collapse:collapse;margin-top:10px;font-size:15px}
+.cmp th,.cmp td{padding:18px 20px;text-align:left;border-bottom:1px solid var(--line)}
+.cmp th{font-family:"JetBrains Mono";font-size:12px;letter-spacing:.12em;color:var(--muted);font-weight:500}
+.cmp td:nth-child(2){background:rgba(198,244,50,.05);color:var(--text);font-weight:600}
+.cmp th:nth-child(2){background:rgba(198,244,50,.1);color:var(--lime);border-radius:12px 12px 0 0}
+.cmp td:nth-child(3){color:var(--dim)}
+.yes{color:var(--lime)}.no{color:var(--coral)}
+.cmp-wrap{overflow-x:auto}
+
+/* SECURITY */
+.sec-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+.shield{position:relative;aspect-ratio:1;max-width:460px;margin:0 auto;width:100%;display:grid;place-items:center}
+.shield .ring{position:absolute;border:1px dashed var(--line-2);border-radius:50%}
+.shield .ring.r1{inset:0;animation:spin 40s linear infinite}
+.shield .ring.r2{inset:14%;animation:spin 30s linear infinite reverse;border-style:solid;border-color:var(--line)}
+.shield .ring.r3{inset:28%;border-color:rgba(198,244,50,.4)}
+.shield .lock{width:30%;aspect-ratio:1;border-radius:28px;background:var(--lime);display:grid;place-items:center;box-shadow:0 0 90px rgba(198,244,50,.45)}
+.orb{position:absolute;padding:8px 14px;border-radius:999px;background:var(--ink-3);border:1px solid var(--line-2);font-size:12px;font-family:"JetBrains Mono";white-space:nowrap}
+.sec-list{display:grid;gap:14px;margin-top:30px}
+.sec-item{display:flex;gap:18px;padding:20px;border:1px solid var(--line);border-radius:18px;background:var(--ink-2)}
+.sec-item .ic{width:46px;height:46px;flex:none;border-radius:12px;background:rgba(198,244,50,.1);color:var(--lime);display:grid;place-items:center;font-size:20px}
+.sec-item b{display:block;font-size:17px;margin-bottom:4px}
+.sec-item p{color:var(--muted);font-size:14px}
+
+/* STEPS */
+.route{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;counter-reset:s}
+.step{border:1px solid var(--line);border-radius:var(--r);padding:28px;background:var(--ink-2);position:relative}
+.step .dot{font-family:"JetBrains Mono";color:var(--lime);font-size:13px;display:flex;justify-content:space-between;align-items:center;margin-bottom:40px}
+.step .dot span{color:var(--dim)}
+.step h4{font-size:22px;letter-spacing:-.02em;margin-bottom:8px}
+.step p{color:var(--muted);font-size:14px}
+.step .bar{height:4px;border-radius:4px;background:var(--line);margin-top:24px;overflow:hidden}
+.step .bar i{display:block;height:100%;background:var(--lime)}
+
+/* TESTIMONIALS */
+.tst-wrap{display:grid;grid-template-columns:.8fr 1.2fr;gap:50px;align-items:start}
+.rating{border:1px solid var(--line);border-radius:var(--r);padding:34px;background:var(--ink-2)}
+.rating .score{font-size:96px;font-weight:700;letter-spacing:-.06em;line-height:1}
+.rating .stars{font-size:22px;margin:8px 0}
+.tst-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.tst{border:1px solid var(--line);border-radius:var(--r);padding:28px;background:var(--ink-2);display:flex;flex-direction:column}
+.tst q{font-size:16px;line-height:1.6;quotes:none;flex:1}
+.tst .who{display:flex;align-items:center;gap:12px;margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
+.tst .av{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:var(--ink)}
+.tst .who small{display:block;color:var(--muted);font-size:12px;font-family:"JetBrains Mono"}
+.tst .res{margin-left:auto;text-align:right}
+.tst .res b{color:var(--lime);font-size:20px;display:block;letter-spacing:-.02em}
+
+/* BLOG */
+.blog-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.post{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--ink-2);transition:.2s}
+.post:hover{border-color:var(--line-2);transform:translateY(-3px)}
+.post .cover{height:180px;position:relative;overflow:hidden}
+.post .body{padding:24px}
+.post .meta{font-family:"JetBrains Mono";font-size:11px;letter-spacing:.12em;color:var(--lime);display:flex;justify-content:space-between}
+.post .meta span{color:var(--dim)}
+.post h4{font-size:20px;letter-spacing:-.02em;line-height:1.25;margin:12px 0 10px}
+.post p{color:var(--muted);font-size:14px}
+
+/* FAQ */
+.faq-grid{display:grid;grid-template-columns:.8fr 1.2fr;gap:60px}
+.help{display:grid;gap:12px;margin-top:30px}
+.help a{display:flex;justify-content:space-between;align-items:center;padding:20px;border:1px solid var(--line);border-radius:16px;background:var(--ink-2)}
+.help a:hover{border-color:var(--lime)}
+.help small{display:block;color:var(--muted);font-family:"JetBrains Mono";font-size:11px}
+details{border-bottom:1px solid var(--line);padding:22px 0}
+summary{cursor:pointer;font-size:18px;font-weight:500;list-style:none;display:flex;gap:18px;align-items:center}
+summary .q{font-family:"JetBrains Mono";color:var(--dim);font-size:13px}
+summary::after{content:"+";color:var(--lime);font-size:26px;line-height:1;margin-left:auto}
+details[open] summary::after{content:"–"}
+details p{color:var(--muted);margin:14px 0 0 40px}
+
+/* CTA */
+.cta{margin:0 24px;border-radius:36px;background:var(--lime);color:var(--ink);padding:100px 40px;position:relative;overflow:hidden}
+.cta-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:40px;align-items:center;max-width:1140px;margin:0 auto;position:relative}
+.cta h2{color:var(--ink);margin:0 0 18px}
+.cta p{opacity:.75;font-size:18px;max-width:520px}
+.cta .btn-primary{background:var(--ink);color:var(--lime);margin-top:32px}
+.cta-list{display:flex;gap:22px;margin-top:22px;font-size:14px;font-weight:500;flex-wrap:wrap}
+.cta-stats{display:grid;gap:12px}
+.cta-stats div{background:rgba(5,8,15,.08);border:1px solid rgba(5,8,15,.15);border-radius:18px;padding:22px}
+.cta-stats b{font-size:42px;letter-spacing:-.05em;display:block;line-height:1}
+.cta-stats span{font-family:"JetBrains Mono";font-size:12px;opacity:.7}
+
+footer{padding:90px 0 40px;color:var(--muted);font-size:14px}
+.foot{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr 1fr;gap:40px;margin-bottom:60px}
+.foot h5{color:var(--text);font-size:14px;margin-bottom:16px}
+.foot a{display:block;margin-bottom:10px}
+.foot a:hover{color:var(--lime)}
+.news{display:flex;margin-top:22px;border:1px solid var(--line-2);border-radius:999px;padding:5px;max-width:340px}
+.news input{flex:1;background:none;border:0;color:var(--text);padding:0 14px;font-family:inherit;outline:none;min-width:0}
+.news button{background:var(--lime);border:0;border-radius:999px;padding:10px 16px;font-weight:600;cursor:pointer}
+.legal{border-top:1px solid var(--line);padding-top:28px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:12px}
+.mega{font-size:clamp(80px,19vw,280px);font-weight:700;letter-spacing:-.07em;line-height:.8;text-align:center;background:linear-gradient(180deg,var(--ink-4),transparent);-webkit-background-clip:text;background-clip:text;color:transparent;margin-top:50px;user-select:none}
+
+/* TOAST + CHAT */
+.toast{position:fixed;left:24px;bottom:24px;z-index:70;background:var(--ink-3);border:1px solid var(--line-2);border-radius:16px;padding:14px 18px;display:flex;gap:12px;align-items:center;box-shadow:0 20px 50px -15px #000;transform:translateY(140%);transition:.5s cubic-bezier(.2,.9,.3,1.2);font-size:14px}
+.toast.show{transform:none}
+.toast .ic{width:38px;height:38px;border-radius:50%;background:var(--lime);color:var(--ink);display:grid;place-items:center;font-weight:700}
+.toast small{display:block;color:var(--muted);font-size:12px}
+.toast b{color:var(--lime)}
+.chat{position:fixed;right:24px;bottom:24px;z-index:70;width:58px;height:58px;border-radius:50%;background:var(--lime);display:grid;place-items:center;box-shadow:0 12px 30px -8px var(--lime)}
+
+@media(max-width:1020px){
+  .menu{display:none}
+  .hero-grid,.dev-grid,.sec-grid,.tst-wrap,.faq-grid,.cta-grid{grid-template-columns:1fr}
+  .radar{max-width:440px;margin:30px auto 0}
+  .hero-stats{grid-template-columns:1fr 1fr}.hero-stats div:nth-child(2){border-right:0}.hero-stats div{border-bottom:1px solid var(--line)}
+  .ops-grid>*{grid-column:1/-1!important;grid-row:auto!important}
+  .stream{height:300px}
+  .int-grid,.route{grid-template-columns:1fr 1fr}
+  .price-grid,.blog-grid{grid-template-columns:1fr}.price.feat{transform:none}
+  .foot{grid-template-columns:1fr 1fr}
+  section{padding:90px 0}
+}
+@media(max-width:600px){
+  .wrap{padding:0 16px}
+  .nav-cta .btn-ghost{display:none}
+  .int-grid,.route,.tst-grid,.kpis{grid-template-columns:1fr}
+  .f1{left:0}.f2{right:0}
+  .sol{flex-basis:280px}
+  .cta{margin:0 16px;padding:60px 22px}
+  .toast{left:16px;right:90px}
+  details p{margin-left:0}
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <pattern id="topo" width="700" height="700" patternUnits="userSpaceOnUse">
+      <g fill="none" stroke="#1c2740" stroke-width="1">
+        <path d="M350 120c110 0 200 70 200 190s-100 200-210 200-190-80-190-200 90-190 200-190z"/>
+        <path d="M350 170c80 0 150 55 150 140s-80 150-160 150-140-60-140-150 70-140 150-140z"/>
+        <path d="M350 220c55 0 100 35 100 90s-50 100-105 100-95-45-95-100 45-90 100-90z"/>
+        <path d="M350 270c28 0 52 18 52 44s-26 52-54 52-48-24-48-52 24-44 50-44z"/>
+        <path d="M-20 600c140-50 250 30 380-10s230-80 360-20"/>
+        <path d="M-20 650c140-50 250 30 380-10s230-80 360-20"/>
+        <path d="M-20 40c160 30 270-30 400 10s200 40 340 0"/>
+        <path d="M-20 85c160 30 270-30 400 10s200 40 340 0"/>
+      </g>
+    </pattern>
+    <symbol id="mark" viewBox="0 0 32 32">
+      <circle cx="16" cy="16" r="15" fill="none" stroke="#C6F432" stroke-width="2"/>
+      <path d="M16 6c-4.4 0-8 3.4-8 7.8C8 19.6 16 26 16 26s8-6.4 8-12.2C24 9.4 20.4 6 16 6z" fill="#C6F432"/>
+      <circle cx="16" cy="13.6" r="3" fill="#05080F"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="notice">⚡ <b>Novo:</b> plugin oficial para WooCommerce — receba por Pix no checkout da sua loja. <u>Saiba mais →</u></div>
+<nav>
+  <div class="wrap">
+    <a href="#" class="logo"><img src="data:image/png;base64,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" alt="Geopay" style="height:32px;width:auto"></a>
+    <div class="menu">
+      <a href="#solucoes">Soluções</a><a href="#dev">Desenvolvedores</a><a href="#tarifas">Tarifas</a><a href="#seguranca">Segurança</a><a href="#faq">Ajuda</a>
+    </div>
+    <div class="nav-cta">
+      <a href="#" class="btn btn-ghost">Entrar</a>
+      <a href="#" class="btn btn-primary">Criar conta →</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <svg class="topo" style="opacity:.6"><rect width="100%" height="100%" fill="url(#topo)"/></svg>
+  <div class="wrap z">
+    <div class="hero-grid">
+      <div>
+        <span class="eyebrow">Gateway de pagamento · Pix em tempo real</span>
+        <h1><span class="hl">Gateway de pagamento</span> via Pix que o seu negócio pode confiar.</h1>
+        <p class="lead">Receba em segundos pelo painel, pela API ou direto no checkout da sua loja. Conta nominal PF e PJ, boletos e conciliação automática, sobre infraestrutura bancária regulada.</p>
+        <div class="hero-actions">
+          <a href="#" class="btn btn-primary">Começar a receber agora →</a>
+          <a href="#" class="btn btn-ghost">Falar com especialista</a>
+        </div>
+      </div>
+
+
+      <div class="radar">
+        <svg class="br" viewBox="-3 -3 106 106">
+          <defs><pattern id="dots" width="1.6" height="1.6" patternUnits="userSpaceOnUse"><circle cx=".8" cy=".8" r=".38" fill="#33456b"/></pattern></defs>
+          <g class="ufs"><path class="uf" data-uf="AC" d="M1.5 32.1 3.4 32.9 3.9 33.1 5.1 33.4 5.5 33.5 6.8 33.8 7.5 34.0 8.2 34.1 9.2 34.3 9.7 34.5 11.2 35.3 11.7 35.6 12.7 36.0 13.2 36.3 13.7 36.6 14.1 36.8 15.2 37.2 15.8 37.5 16.9 38.0 17.4 38.2 17.8 38.4 18.7 38.7 19.1 38.9 18.8 39.2 18.4 39.5 18.2 39.8 17.8 40.0 17.3 40.1 16.9 40.4 16.6 40.7 16.2 40.9 15.7 40.8 15.4 41.1 15.1 41.5 14.7 41.8 14.3 42.0 13.8 42.1 13.6 41.7 13.1 41.7 12.7 41.6 12.2 41.6 11.7 41.6 11.3 41.7 10.8 41.5 10.4 41.7 10.0 41.8 9.5 41.8 9.0 41.7 9.0 41.0 9.0 40.3 9.0 39.4 9.0 38.7 9.2 38.3 9.3 37.9 8.9 38.0 8.5 38.3 8.2 38.6 7.7 38.8 7.4 39.1 6.0 39.2 5.6 39.2 5.1 39.2 5.1 38.7 4.9 38.3 4.7 37.9 4.2 37.8 3.8 37.7 2.9 37.7 2.9 37.2 3.2 36.9 3.1 36.4 2.8 36.1 2.4 35.8 2.3 35.3 1.9 35.1 1.6 34.7 1.5 34.3 1.2 34.0 1.3 33.6 0.9 33.3 0.6 33.0 0.6 32.5 1.1 32.4 1.1 31.9Z" style="--h:0"/><path class="uf" data-uf="AL" d="M97.8 36.2 98.3 36.3 98.4 36.8 98.2 37.2 97.9 37.5 97.6 37.9 97.3 38.2 96.9 38.5 96.6 38.9 96.4 39.3 96.0 39.6 95.7 40.0 95.5 40.4 95.1 40.3 94.9 39.8 94.4 39.7 94.1 39.4 93.7 39.1 93.3 38.9 92.9 38.6 92.5 38.5 92.1 38.2 91.6 38.0 91.2 37.8 90.9 37.5 91.2 37.1 91.6 36.9 91.8 36.5 92.3 36.7 92.8 36.7 93.2 36.9 93.5 37.2 93.9 37.5 94.5 37.4 94.9 37.5 95.3 37.2 95.7 37.1 96.1 36.7 96.4 36.4 96.8 36.3 97.3 36.4 97.7 36.2Z" style="--h:0"/><path class="uf" data-uf="AM" d="M17.4 8.6 17.5 9.0 17.9 9.3 18.0 9.8 18.0 10.3 18.0 10.7 18.5 10.6 19.2 11.2 19.9 11.8 20.4 11.8 20.8 11.7 21.1 11.4 21.5 11.2 22.0 11.4 21.8 11.8 22.2 11.8 22.4 11.4 22.8 11.2 23.0 10.8 23.4 10.6 23.9 10.6 24.2 10.3 24.6 10.0 25.0 10.0 25.4 9.7 25.6 9.3 25.6 8.8 26.0 8.7 26.5 8.6 26.9 8.3 27.3 8.2 27.8 8.2 28.1 8.5 28.7 8.6 29.0 9.0 29.0 9.4 29.0 9.9 29.2 10.3 29.4 10.8 29.6 11.2 29.6 11.6 29.5 12.3 29.7 12.7 29.7 13.2 29.9 13.6 30.1 14.1 30.2 14.5 30.1 15.0 30.0 15.4 29.6 15.5 29.9 15.9 30.2 16.2 30.5 16.5 30.8 16.8 31.0 17.2 31.5 17.3 31.9 17.5 31.8 17.1 31.9 16.6 31.9 16.2 32.0 15.7 32.3 15.3 32.8 15.2 33.2 15.1 33.6 15.4 33.9 15.8 34.3 15.9 34.8 15.7 35.1 15.4 34.9 14.9 35.1 14.5 35.3 14.1 35.5 13.7 35.7 13.3 37.3 13.1 37.9 13.1 38.6 13.1 38.7 13.8 38.7 14.2 38.8 14.7 39.1 15.0 39.2 15.5 39.6 15.8 39.9 16.2 40.1 16.6 40.5 16.9 40.8 16.5 40.9 17.0 41.3 17.4 41.7 17.7 42.1 17.9 42.5 18.1 42.9 18.1 43.3 18.5 43.6 18.7 44.1 18.9 44.2 19.3 44.6 19.2 45.1 19.2 45.5 18.9 45.3 19.4 44.9 19.6 44.9 20.1 44.0 22.0 43.7 22.6 43.4 23.4 42.1 26.3 41.3 28.0 40.5 29.6 40.2 30.2 39.8 30.6 39.7 31.0 39.9 31.4 40.2 31.8 40.5 32.1 40.4 32.7 40.3 33.2 40.1 33.6 40.1 34.1 40.1 34.5 40.0 35.0 39.9 35.4 39.8 35.9 38.1 36.1 36.6 36.1 34.8 36.1 34.0 36.1 32.9 36.1 31.9 36.1 31.5 35.9 31.2 36.2 30.7 36.1 30.4 35.8 30.0 35.5 29.9 35.1 29.4 34.9 29.1 34.6 28.8 34.2 27.0 34.0 26.6 34.3 26.4 34.8 26.0 34.9 25.8 35.4 25.7 35.8 25.4 36.2 25.2 36.6 24.7 36.6 24.2 36.7 23.8 36.6 23.4 36.9 23.3 37.4 23.0 37.7 22.7 37.4 22.3 37.5 21.8 37.7 21.4 38.1 21.0 37.9 20.5 37.7 20.0 37.7 19.6 38.1 19.3 38.3 18.8 38.6 17.9 38.4 17.4 38.2 16.9 38.0 15.8 37.5 15.2 37.2 14.1 36.8 13.7 36.6 13.2 36.3 12.7 36.0 12.0 35.7 11.2 35.3 9.7 34.5 9.2 34.3 8.2 34.1 7.5 34.0 6.8 33.8 5.5 33.5 5.1 33.4 3.9 33.1 3.4 32.9 1.5 32.1 1.0 31.8 1.1 31.4 1.4 31.0 1.8 30.7 2.2 30.5 2.6 30.3 2.7 29.9 2.5 29.5 2.6 29.0 2.7 28.6 3.0 28.3 3.1 27.8 3.3 27.4 3.3 26.9 3.7 26.6 4.1 26.4 4.5 26.2 4.9 25.9 5.3 25.7 5.7 25.5 6.0 25.2 6.5 25.2 6.9 25.1 7.4 25.0 7.8 24.9 8.3 24.8 8.6 24.4 9.0 24.2 9.4 24.4 9.9 24.4 10.1 24.8 10.6 24.8 10.9 23.9 11.0 23.1 11.1 22.5 11.2 21.9 11.3 21.4 11.6 19.9 11.7 19.5 11.7 19.0 11.9 18.1 12.0 17.6 12.1 17.2 12.1 16.7 12.0 16.3 11.7 15.9 11.7 15.4 11.5 15.0 11.1 14.7 10.7 14.5 10.5 14.1 10.5 13.6 10.5 12.3 11.0 12.3 11.4 12.1 11.8 11.9 12.2 12.2 12.7 12.1 12.7 11.6 12.6 11.1 12.2 11.0 11.7 11.0 11.3 10.9 11.0 9.9 11.0 9.4 11.5 9.3 11.9 9.3 12.7 9.3 13.1 9.3 14.4 9.3 15.3 9.3 15.0 8.8 15.5 8.9 16.0 8.9 16.2 8.6 16.7 8.4 17.1 8.1 17.4 8.5Z" style="--h:0"/><path class="uf" data-uf="AP" d="M58.1 3.5 58.4 3.9 58.4 4.5 58.4 5.0 58.5 5.4 58.6 5.9 58.7 6.3 58.9 6.7 59.0 7.2 59.2 7.6 59.3 8.0 59.8 8.1 60.2 8.4 60.4 8.8 60.6 9.1 61.3 9.4 61.4 9.9 61.4 10.3 61.4 10.8 61.3 11.2 61.0 11.6 60.7 11.9 60.2 12.0 59.9 12.4 59.8 12.9 59.4 13.3 58.8 13.5 58.4 13.9 57.9 14.2 57.7 14.7 57.4 15.1 56.9 15.7 56.8 16.2 56.6 16.6 56.2 16.7 55.7 16.7 55.2 16.6 55.0 16.2 54.7 15.8 54.7 15.2 54.3 15.0 54.3 14.5 54.0 14.2 53.6 13.9 53.4 13.4 53.3 13.0 53.1 12.5 53.3 12.0 52.9 11.7 52.5 11.4 52.4 10.9 52.2 10.5 51.9 10.2 51.4 10.2 51.0 10.0 50.7 9.7 50.3 9.4 49.9 9.3 49.4 9.2 49.1 8.9 49.0 8.4 49.0 8.0 48.8 7.5 49.3 7.5 49.9 8.1 50.5 8.2 51.0 8.1 51.4 7.9 51.9 7.9 52.3 8.0 52.7 7.8 52.9 8.2 53.3 8.1 53.8 8.2 54.1 7.8 54.4 7.6 54.7 7.2 54.8 6.7 55.1 6.3 55.2 5.9 55.4 5.5 55.7 5.1 55.9 4.7 56.1 4.3 56.5 4.0 56.7 3.6 57.0 3.2 57.1 2.8 57.6 2.7 58.0 3.1 58.1 3.5Z" style="--h:0"/><path class="uf" data-uf="BA" d="M88.2 35.5 88.4 35.9 88.9 36.0 89.4 36.1 89.7 36.5 90.0 36.2 90.2 36.6 90.7 36.7 90.7 37.2 90.9 37.6 91.3 37.8 91.4 38.3 91.5 38.7 91.7 39.1 92.0 39.5 92.1 40.0 91.9 40.4 91.9 40.9 91.4 41.1 91.0 41.0 90.8 41.4 91.1 41.8 91.3 42.2 91.5 42.6 91.8 42.9 92.2 43.2 92.7 43.1 93.1 42.9 92.8 43.2 92.5 43.9 92.3 44.4 92.0 44.8 91.7 45.3 91.5 45.7 91.1 46.1 90.8 46.4 90.4 46.7 89.9 46.8 89.6 47.0 89.2 47.3 89.0 47.8 89.1 48.2 88.9 48.7 89.1 49.1 89.0 49.6 88.9 50.0 88.8 50.5 88.7 51.0 88.8 51.4 88.9 51.9 88.9 52.4 89.0 52.9 89.0 53.3 89.1 53.8 89.2 54.2 89.0 54.7 88.9 55.1 88.7 55.5 88.7 56.0 88.5 56.5 88.5 56.9 88.4 57.4 88.3 57.8 88.4 58.3 88.5 58.7 88.2 59.1 87.8 59.4 87.5 59.8 87.3 60.2 86.8 60.1 85.8 59.5 85.8 59.0 85.5 58.7 85.2 58.4 84.8 58.1 84.9 57.6 84.9 57.2 85.1 56.7 85.6 56.7 85.6 56.3 85.8 55.9 86.1 55.6 86.5 55.3 86.7 54.8 86.4 54.4 86.0 54.2 85.6 54.0 85.2 53.8 84.8 53.8 84.3 53.6 83.8 53.7 83.3 53.8 83.0 53.5 82.7 52.9 82.2 52.5 81.8 52.2 81.4 52.3 80.9 52.2 80.5 52.1 80.1 51.9 79.7 51.7 79.2 51.4 78.8 51.1 78.4 51.0 77.9 51.1 77.5 51.4 77.1 51.2 76.7 51.1 76.7 50.5 76.5 50.1 76.1 50.0 75.6 50.0 75.2 50.1 74.7 50.3 74.4 50.6 74.0 50.9 73.6 51.1 73.2 51.3 72.8 51.6 72.4 51.8 72.0 52.1 71.6 52.3 71.1 52.4 71.3 51.9 71.1 51.5 71.2 51.1 71.2 50.6 71.3 50.1 71.0 49.9 70.6 49.6 70.6 49.1 70.6 48.6 70.6 48.2 70.9 47.8 70.4 47.6 70.5 47.1 70.8 46.8 70.5 46.3 70.5 45.9 70.8 45.6 70.5 45.3 70.3 44.9 70.2 44.4 70.6 44.1 70.4 43.7 70.6 43.3 70.1 43.1 69.8 42.7 69.9 42.3 70.1 41.8 70.5 41.5 70.7 41.0 71.0 40.7 71.4 40.4 71.8 40.1 72.0 39.6 72.4 39.8 72.7 40.2 72.6 40.7 72.9 41.1 73.3 41.3 73.8 41.5 74.3 41.2 74.6 40.9 75.1 40.8 75.5 40.6 75.8 40.8 76.1 40.5 76.5 40.2 76.8 39.7 77.0 39.3 77.1 38.9 76.8 38.5 76.6 38.1 77.1 37.7 77.4 37.4 77.9 37.6 78.3 37.7 78.8 37.7 79.1 38.1 79.6 38.0 80.1 37.9 80.4 37.6 80.8 37.4 81.3 37.3 81.8 37.1 82.0 36.7 82.5 36.5 82.7 36.1 83.2 35.9 83.6 36.1 84.1 36.3 84.3 36.7 84.6 37.0 84.5 37.4 84.8 37.9 85.2 37.7 85.6 37.4 85.7 36.8 86.2 36.8 86.6 36.6 86.7 36.2 87.1 36.1 87.5 35.7 87.8 35.5Z" style="--h:0.15"/><path class="uf" data-uf="CE" d="M86.3 21.0 86.8 21.2 87.2 21.4 87.6 21.7 88.1 21.9 88.5 22.2 88.9 22.4 89.3 22.7 89.6 23.0 90.0 23.2 90.4 23.5 90.8 23.8 91.1 24.3 91.4 24.6 91.8 24.9 92.1 25.2 92.4 25.5 92.9 25.6 93.3 25.9 92.8 26.2 92.3 26.3 92.1 26.7 91.9 27.1 91.7 27.6 91.4 27.9 91.2 28.3 91.1 28.8 90.8 29.1 90.3 29.2 90.1 29.6 90.1 30.1 89.8 30.5 89.8 30.9 89.5 31.3 89.7 31.7 89.9 32.2 89.9 32.6 89.7 33.0 89.4 33.3 89.0 33.6 88.6 33.4 88.2 33.2 88.0 32.8 87.6 32.6 87.2 32.4 86.6 32.4 86.2 32.6 85.7 32.5 85.1 32.5 85.1 32.0 85.3 31.6 85.3 31.1 84.9 30.8 84.5 30.7 84.4 30.2 84.3 29.7 84.2 29.3 84.1 28.8 84.0 28.4 84.1 27.9 84.0 27.4 84.0 27.0 83.6 26.7 83.3 26.3 83.2 25.9 83.3 25.4 83.4 25.0 83.5 24.5 83.5 24.1 83.3 23.7 83.2 23.2 82.9 22.9 82.8 22.4 83.0 21.8 83.2 21.4 83.5 21.1 84.0 21.0 84.4 21.0 84.9 21.0 85.4 20.9 85.8 20.9 86.3 21.0Z" style="--h:0"/><path class="uf" data-uf="ES" d="M84.5 66.8 84.3 67.2 84.1 67.6 83.7 67.8 83.2 67.7 82.7 67.7 82.3 67.6 82.0 67.2 82.0 66.8 81.7 66.4 81.8 66.0 81.7 65.6 81.9 65.2 82.4 65.2 82.9 65.1 83.1 64.6 83.4 64.2 83.4 63.8 83.7 63.5 84.0 63.1 84.0 62.6 83.7 62.3 83.5 61.8 84.0 61.7 83.8 61.2 83.8 60.8 83.5 60.4 83.7 60.0 84.1 59.8 84.3 59.4 84.8 59.5 85.2 59.3 85.7 59.4 86.6 60.0 87.2 60.4 87.1 60.8 87.0 61.3 87.0 61.8 87.1 62.3 87.1 62.8 87.0 63.4 86.7 63.8 86.4 64.0 86.1 64.4 85.9 64.8 85.8 65.3 85.5 65.7 85.3 66.1 85.0 66.5 84.7 66.7Z" style="--h:0"/><path class="uf" data-uf="GO" d="M60.7 45.3 60.5 45.8 60.4 46.2 60.6 46.6 61.1 46.6 61.5 46.9 62.1 47.2 62.7 47.5 62.8 47.0 63.0 46.6 63.5 46.4 63.9 46.4 64.3 46.6 64.6 47.0 64.6 47.4 65.1 47.5 65.5 47.3 65.9 47.6 66.4 47.6 67.0 48.0 67.0 47.5 67.2 47.1 67.6 47.4 68.0 47.4 68.5 47.3 68.9 47.0 69.3 46.7 69.8 46.7 70.2 46.4 70.4 46.8 70.9 46.6 70.5 46.9 70.4 47.3 70.9 47.6 70.6 47.9 70.8 48.3 70.5 48.7 70.6 49.2 70.6 49.6 71.0 49.9 71.3 50.2 71.2 50.6 71.1 51.1 71.1 51.5 70.7 51.7 70.4 51.4 70.0 51.2 69.9 51.6 69.9 52.1 69.4 52.0 68.9 52.0 68.8 52.5 68.9 53.0 68.9 53.4 69.1 53.8 68.8 54.2 68.3 54.3 67.9 54.5 67.8 54.1 67.9 53.6 67.6 53.2 67.1 53.2 66.1 53.2 65.7 53.5 65.6 53.9 65.5 54.4 65.9 54.6 66.6 54.6 67.1 54.6 67.6 54.6 67.9 54.9 67.7 55.4 67.6 55.9 68.0 56.1 68.2 56.5 68.4 56.9 68.0 57.3 67.7 57.6 67.4 57.9 67.5 58.3 68.0 58.5 67.8 58.9 67.8 59.4 67.8 59.8 67.3 60.1 67.0 60.5 66.6 60.6 66.1 60.7 65.7 60.5 65.2 60.5 64.7 60.4 64.3 60.4 63.8 60.3 63.4 60.6 63.0 60.8 62.7 61.1 62.4 60.8 62.0 61.1 61.6 61.2 61.1 61.1 60.6 61.3 60.2 61.6 59.8 61.9 59.7 62.4 59.2 62.6 58.9 63.1 58.5 63.0 58.1 62.8 57.7 62.7 57.3 62.4 56.8 62.4 56.4 62.2 56.0 62.0 55.6 61.7 55.2 61.6 54.8 61.3 54.3 61.3 53.9 61.2 53.8 60.7 53.7 60.3 53.3 60.1 53.4 59.6 53.2 59.2 52.9 58.8 52.9 58.4 53.0 57.9 53.1 57.5 53.4 57.1 53.5 56.6 53.9 56.4 54.2 56.1 54.5 55.7 54.3 55.3 54.7 55.0 55.1 54.7 55.4 54.3 55.8 54.2 56.3 54.0 56.7 53.6 56.8 53.1 56.9 52.6 57.1 52.2 57.5 51.9 58.0 52.0 58.4 51.7 58.5 51.2 58.7 50.7 58.7 50.2 58.8 49.7 58.9 49.3 59.0 48.8 59.2 48.3 59.4 47.9 59.6 47.5 59.6 47.0 59.8 46.6 59.9 46.1 60.2 45.7 60.5 45.4Z" style="--h:0.15"/><path class="uf" data-uf="MA" d="M68.6 36.6 68.9 36.3 69.0 35.8 69.1 35.3 69.4 35.0 69.9 34.9 70.0 34.4 69.8 33.9 69.4 33.9 68.9 34.1 68.5 34.1 68.2 33.7 67.9 33.4 67.7 33.0 67.4 32.7 67.2 32.2 66.8 32.0 67.2 31.7 67.4 31.3 67.4 30.8 67.6 30.3 67.7 29.7 67.6 29.2 67.6 28.7 67.5 28.1 67.3 27.6 66.8 27.4 66.5 27.1 66.0 27.2 65.5 27.0 65.0 26.9 64.6 27.3 65.0 26.7 65.6 26.3 66.0 26.0 66.6 25.5 67.1 25.4 67.4 25.0 67.6 24.6 67.8 24.2 68.1 23.9 68.5 23.5 68.6 23.1 68.7 22.7 68.9 22.3 69.2 22.0 69.5 21.6 69.5 21.1 69.5 20.6 69.9 20.4 70.1 20.0 70.2 19.5 70.5 19.1 70.7 18.6 70.4 18.2 70.8 18.0 70.8 17.5 70.9 17.1 71.0 16.7 71.5 16.6 71.8 17.0 72.1 17.2 72.6 17.1 72.5 17.6 72.8 17.2 72.8 17.6 72.8 18.1 73.1 17.8 73.4 17.4 73.9 17.5 74.2 17.8 74.5 18.2 74.9 18.4 75.0 18.9 75.2 19.3 75.3 19.7 75.7 20.0 76.2 19.9 76.7 19.7 77.1 19.5 77.5 19.8 78.0 19.7 78.5 19.9 78.9 20.1 79.4 20.3 79.8 20.5 80.2 20.6 80.7 20.5 81.2 20.6 81.6 20.7 81.7 21.1 81.6 21.6 81.3 22.0 81.0 22.3 80.6 22.5 80.1 22.6 79.8 22.9 79.6 23.4 79.3 23.8 79.1 24.2 78.8 24.7 79.1 25.0 79.0 25.6 79.0 26.0 79.2 26.5 79.3 27.0 79.1 27.5 78.8 27.8 78.6 28.3 78.5 28.8 78.7 29.3 79.0 29.6 79.1 30.0 79.1 30.4 78.8 30.8 78.4 31.0 77.9 31.0 77.4 31.0 77.0 30.8 76.6 30.9 76.1 31.0 75.8 31.4 75.5 31.8 75.0 32.0 74.7 32.3 74.3 32.5 73.9 32.7 73.4 32.9 73.0 33.0 72.6 33.3 72.4 33.7 72.3 34.1 72.2 34.6 72.0 35.0 71.8 35.4 71.6 35.9 71.3 36.3 71.4 36.7 71.5 37.2 71.7 37.6 71.6 38.1 71.7 38.5 71.6 39.0 71.5 39.5 71.2 39.8 70.7 39.6 70.2 39.5 70.0 39.1 69.8 38.7 69.7 38.2 69.6 37.8 69.2 37.5 69.1 37.1 68.7 36.8Z" style="--h:0"/><path class="uf" data-uf="MG" d="M75.7 50.0 76.2 50.1 76.6 50.1 76.6 50.7 76.8 51.1 77.2 51.3 77.7 51.2 78.1 51.1 78.5 51.1 79.0 51.2 79.4 51.5 79.8 51.7 80.2 52.0 80.6 52.2 81.0 52.3 81.5 52.3 82.2 52.5 82.7 52.9 83.0 53.5 83.3 53.8 83.8 53.7 84.3 53.6 84.7 53.8 85.2 53.8 85.6 54.0 86.0 54.2 86.4 54.4 86.6 54.8 86.5 55.3 86.2 55.6 85.8 55.9 85.6 56.3 85.7 56.7 85.2 56.7 85.0 57.1 84.9 57.5 84.9 58.0 85.1 58.3 85.5 58.6 85.8 59.0 85.8 59.4 85.3 59.3 84.8 59.4 84.4 59.5 84.4 59.9 83.9 59.9 83.5 60.2 83.8 60.7 83.7 61.2 84.0 61.5 83.6 61.7 83.7 62.1 84.0 62.5 84.0 62.9 83.9 63.4 83.6 63.7 83.4 64.1 83.1 64.5 83.0 64.9 82.4 65.2 81.9 65.2 81.7 65.5 81.8 66.0 81.7 66.4 81.4 66.8 81.0 67.0 80.9 67.5 80.7 68.0 80.7 68.4 80.4 68.8 80.2 69.2 79.7 69.4 79.2 69.6 78.8 69.8 78.4 69.8 77.9 69.7 77.5 69.9 77.0 69.9 76.6 70.0 76.1 70.1 75.7 70.4 75.3 70.4 74.9 70.6 74.4 70.6 74.0 70.9 73.5 71.0 73.1 71.2 72.6 71.3 72.2 71.3 71.7 71.5 71.6 71.9 71.1 72.0 70.6 72.0 70.3 71.6 70.1 71.2 69.8 70.9 69.4 70.5 69.6 70.1 69.6 69.7 69.6 69.2 69.8 68.8 69.9 68.3 69.5 68.1 69.0 68.2 68.6 68.0 68.4 67.6 68.3 67.1 68.1 66.7 68.4 66.3 68.2 65.9 67.9 65.5 68.0 65.1 67.6 64.8 67.2 64.6 66.8 64.6 66.4 64.9 65.9 65.0 65.6 64.7 65.1 64.9 64.7 65.0 64.2 65.0 64.0 65.4 63.7 65.1 63.3 65.3 62.9 65.1 63.0 64.6 62.5 64.6 62.1 64.4 61.5 64.5 61.1 64.4 60.6 64.3 60.1 64.1 59.6 64.2 59.1 64.5 58.7 64.7 58.5 64.3 58.5 63.8 58.8 63.5 59.0 63.0 59.3 62.6 59.7 62.4 59.8 61.9 60.2 61.5 60.7 61.2 61.2 61.1 61.6 61.2 62.1 60.9 62.5 61.1 63.0 60.9 63.3 60.5 63.7 60.4 64.2 60.4 64.7 60.4 65.1 60.4 65.6 60.4 66.0 60.6 66.4 60.8 66.8 60.5 67.2 60.2 67.5 59.9 67.9 59.7 67.8 59.3 67.9 58.8 67.9 58.3 67.4 58.3 67.4 57.9 67.7 57.5 68.1 57.2 68.3 56.8 68.1 56.4 67.8 56.0 67.5 55.6 67.8 55.2 67.8 54.8 68.1 54.5 68.8 54.2 69.2 53.9 69.0 53.5 68.9 53.0 69.0 52.5 68.9 52.1 69.3 52.0 69.8 52.1 69.9 51.6 69.9 51.2 70.3 51.4 70.6 51.7 71.1 51.6 71.2 52.1 71.0 52.5 71.4 52.2 71.9 52.2 72.2 51.9 72.6 51.7 73.0 51.5 73.5 51.3 73.8 51.0 74.2 50.7 74.6 50.4 75.0 50.2 75.4 50.0Z" style="--h:0.3"/><path class="uf" data-uf="MS" d="M51.3 59.3 51.7 59.5 52.2 59.6 52.7 59.6 53.1 59.6 53.3 60.1 53.7 60.3 54.1 60.4 53.8 60.8 53.9 61.2 54.4 61.3 54.9 61.3 55.2 61.6 55.6 61.7 56.0 62.0 56.4 62.2 56.9 62.4 57.4 62.5 57.8 62.6 58.2 62.8 58.6 63.1 58.8 63.6 58.5 63.9 58.6 64.4 58.6 64.8 58.4 65.3 58.0 65.4 57.6 65.7 57.3 66.1 57.0 66.5 57.0 67.0 56.6 67.3 56.4 67.7 56.3 68.2 55.9 68.5 55.9 69.0 55.5 69.4 55.2 69.9 54.8 70.2 54.4 70.5 53.9 70.8 53.5 71.0 53.2 71.4 52.7 71.7 52.3 71.9 52.0 72.2 51.9 72.7 51.6 73.2 51.2 73.4 50.9 73.9 50.8 74.3 50.7 74.8 50.3 75.0 49.9 74.6 49.5 74.4 49.1 74.5 48.7 74.7 48.2 74.7 47.8 74.7 47.4 74.5 47.3 74.0 47.1 73.6 47.2 73.2 47.1 72.7 46.9 72.3 46.8 71.9 46.9 71.4 46.6 71.1 46.5 70.7 46.1 70.5 45.6 70.4 45.2 70.3 44.9 69.9 44.5 70.2 44.1 70.3 43.6 70.4 43.2 70.3 42.7 70.3 42.3 70.2 41.9 70.0 41.4 70.1 41.0 69.9 41.1 69.5 41.1 69.0 41.0 68.6 41.2 68.1 41.3 67.7 41.3 67.2 41.3 66.7 41.1 66.3 40.9 65.9 40.7 65.5 40.6 65.1 40.9 64.8 40.6 64.0 40.9 63.4 41.5 62.2 42.0 60.2 41.9 59.7 41.6 59.1 41.5 58.7 41.9 58.9 42.2 59.2 42.7 59.1 43.1 59.0 43.5 58.7 43.8 58.3 44.0 57.9 44.5 57.8 44.9 57.8 45.4 57.6 45.8 57.4 46.2 57.7 46.7 57.9 47.1 58.1 47.5 58.3 47.9 58.5 48.3 58.6 48.8 58.6 49.2 58.3 49.7 58.2 50.0 58.5 50.5 58.6 50.9 58.4 51.2 58.1 51.6 57.7 51.8 58.7 51.3 58.9 51.1 59.3Z" style="--h:0"/><path class="uf" data-uf="MT" d="M34.9 47.6 35.2 47.2 35.4 46.8 35.6 46.4 35.7 45.9 36.0 45.6 36.3 45.3 36.1 44.9 36.0 44.4 35.8 44.0 35.6 43.6 35.7 43.1 36.0 42.8 35.9 42.4 35.7 42.0 35.2 42.0 34.8 41.8 33.8 41.7 32.3 41.7 32.0 41.3 32.1 40.8 32.1 40.4 31.9 39.9 31.9 39.4 32.0 39.0 32.0 38.5 32.1 38.1 31.9 37.7 32.0 37.1 32.0 36.6 31.9 36.2 32.9 36.1 33.7 36.1 34.8 36.1 36.2 36.1 38.1 36.1 39.6 36.1 40.1 35.9 39.9 35.5 40.0 35.0 40.1 34.6 40.1 34.1 40.0 33.6 40.3 33.3 40.4 32.8 40.7 32.5 41.0 33.1 41.2 33.6 41.3 34.0 41.6 34.5 41.7 34.9 41.8 35.4 41.9 35.9 42.4 36.1 42.7 36.4 43.1 36.6 43.3 37.0 43.8 37.2 44.0 37.6 45.3 37.7 46.5 37.8 48.5 37.9 49.5 38.0 50.2 38.1 50.7 38.1 52.1 38.2 52.7 38.2 53.2 38.3 54.5 38.4 55.2 38.4 56.2 38.5 57.8 38.6 58.5 38.6 59.0 38.7 60.5 38.8 60.4 39.2 60.1 39.6 60.0 40.1 59.8 40.5 59.6 40.9 59.5 41.3 59.6 41.8 59.5 42.3 59.3 42.7 59.3 43.2 59.3 43.7 59.4 44.1 59.4 44.6 59.5 45.0 59.5 45.5 59.5 46.0 59.7 46.4 59.6 46.9 59.6 47.4 59.4 47.8 59.2 48.2 59.0 48.6 59.0 49.1 59.0 49.5 58.7 50.0 58.6 50.5 58.6 50.9 58.5 51.4 58.3 51.8 57.9 52.0 57.4 52.1 57.0 52.3 56.9 52.8 56.7 53.2 56.6 53.7 56.2 54.0 55.7 54.2 55.3 54.4 55.0 54.7 54.6 55.0 54.3 55.4 54.5 55.8 54.2 56.1 53.8 56.4 53.5 56.8 53.4 57.2 53.1 57.6 53.0 58.0 52.9 58.5 53.1 58.9 53.2 59.3 52.8 59.5 52.3 59.6 51.9 59.5 51.4 59.4 51.3 59.0 51.7 58.7 51.8 57.6 51.4 57.9 51.1 58.2 50.8 58.6 50.3 58.7 50.0 58.4 49.5 58.2 49.1 58.4 48.6 58.5 48.2 58.7 47.8 58.4 47.3 58.3 47.0 58.0 46.6 57.8 46.1 57.7 45.7 57.4 45.3 57.6 44.9 57.8 44.4 57.8 44.0 57.9 43.7 58.4 43.4 58.7 43.1 59.0 42.6 59.1 42.1 59.2 41.8 58.8 41.6 58.4 41.2 58.1 40.7 58.1 40.4 57.9 40.0 57.6 39.8 57.2 39.7 56.8 39.7 56.3 39.9 55.9 40.1 55.4 38.9 55.2 37.2 55.2 36.5 55.1 35.8 55.1 35.3 53.4 34.6 52.4 35.2 52.2 35.2 50.9 34.9 50.6 34.7 50.2 34.6 49.7 34.9 49.3 34.7 48.9 34.3 48.7 34.5 48.2 34.8 48.0Z" style="--h:0"/><path class="uf" data-uf="PA" d="M68.8 15.6 69.2 15.9 69.6 15.7 69.5 16.2 69.9 16.0 70.2 16.4 70.5 16.1 70.6 16.6 71.0 16.4 70.8 16.9 70.8 17.4 70.8 17.8 70.5 18.1 70.7 18.6 70.5 19.0 70.3 19.4 70.1 19.9 69.9 20.3 69.6 20.6 69.8 21.0 69.5 21.4 69.4 21.8 69.1 22.2 68.8 22.5 68.6 22.9 68.5 23.4 68.3 23.7 67.9 24.1 67.7 24.5 67.5 24.8 67.2 25.2 66.8 25.4 66.1 25.9 65.7 26.2 65.2 26.6 64.5 27.1 64.8 27.5 65.2 27.5 65.5 27.9 65.7 28.3 65.5 28.7 65.3 29.1 65.1 29.5 65.2 30.0 64.8 30.1 64.5 30.4 64.2 30.8 63.8 31.0 63.3 31.2 63.1 31.6 63.2 32.1 62.8 32.6 62.7 33.1 63.1 33.5 63.2 33.9 63.1 34.4 63.0 34.9 62.7 35.3 62.5 35.7 62.2 36.1 61.8 36.4 61.5 36.8 61.3 37.2 61.0 37.5 60.9 38.0 60.7 38.4 59.0 38.7 58.5 38.6 57.8 38.6 56.2 38.5 55.4 38.4 54.5 38.4 53.2 38.3 52.7 38.2 52.1 38.2 50.7 38.1 50.2 38.1 49.5 38.0 48.8 37.9 46.5 37.8 45.6 37.7 44.3 37.6 43.9 37.3 43.4 37.2 43.3 36.8 42.9 36.5 42.5 36.3 42.1 36.0 41.9 35.6 41.7 35.1 41.8 34.7 41.5 34.2 41.3 33.8 41.2 33.3 40.9 32.8 40.6 32.4 40.4 32.0 40.1 31.6 39.7 31.1 39.8 30.7 40.1 30.3 40.5 29.6 41.3 28.0 42.1 26.3 43.4 23.4 43.6 23.0 43.9 22.2 44.7 20.4 44.9 20.0 45.0 19.5 45.4 19.3 45.7 19.0 45.3 19.1 44.8 19.2 44.4 19.3 44.1 18.9 43.7 18.8 43.3 18.5 43.0 18.2 42.6 18.1 42.1 17.9 41.7 17.8 41.4 17.4 41.0 17.2 41.0 16.7 40.5 16.9 40.1 16.6 39.8 16.3 39.6 15.9 39.3 15.6 39.1 15.1 38.9 14.7 38.7 14.3 38.7 13.8 38.6 13.1 38.6 12.2 38.6 10.6 39.1 10.6 39.5 10.5 39.6 10.0 40.0 9.8 40.5 9.8 41.0 9.8 41.3 9.5 41.7 9.4 42.2 9.2 42.4 8.9 42.9 8.8 43.3 8.8 43.8 8.9 44.2 8.9 44.7 8.8 45.1 8.8 45.6 8.9 46.0 9.0 46.2 8.6 46.0 8.2 45.7 7.9 46.0 7.5 46.4 7.5 46.9 7.6 47.4 7.5 47.9 7.4 48.3 7.2 48.8 7.5 49.0 8.0 49.0 8.4 49.1 8.9 49.4 9.2 49.8 9.3 50.3 9.3 50.7 9.6 51.0 9.9 51.4 10.2 51.9 10.2 52.2 10.5 52.4 11.0 52.6 11.5 53.0 11.7 53.2 12.1 53.1 12.6 53.3 13.1 53.5 13.5 53.7 14.0 54.1 14.3 54.3 14.8 54.4 15.2 54.8 15.5 55.0 16.0 55.1 16.4 55.5 16.6 55.9 16.9 56.2 16.6 56.8 16.5 56.8 15.8 57.1 15.4 57.4 15.0 57.7 14.6 58.0 14.0 58.6 13.7 59.1 13.5 59.5 13.1 59.8 12.6 60.0 12.2 60.6 12.0 61.0 12.3 61.0 12.8 61.5 12.9 61.9 12.8 62.2 13.2 62.5 13.6 63.6 14.1 64.1 14.3 64.6 14.3 65.0 14.4 65.0 14.8 65.6 15.2 66.2 15.4 66.6 15.4 67.1 15.2 67.4 15.5 67.8 15.3 68.2 15.5 68.6 15.8Z" style="--h:0"/><path class="uf" data-uf="PB" d="M93.4 29.1 93.4 29.5 93.0 29.8 92.9 30.3 92.8 30.7 93.2 30.8 93.6 31.0 94.1 31.0 94.5 31.1 94.9 31.4 95.2 31.0 95.1 30.5 95.2 30.0 95.6 29.8 95.9 30.1 96.4 30.1 96.8 30.2 97.3 30.2 97.7 30.2 98.3 30.4 98.7 30.3 99.1 30.6 99.2 31.1 99.3 31.5 99.5 31.9 99.5 32.4 99.5 32.9 99.0 32.8 98.6 32.5 98.1 32.6 97.7 32.8 97.6 33.2 97.1 33.4 96.7 33.6 96.2 33.5 95.8 33.6 95.3 33.9 94.9 34.0 94.7 34.5 94.3 34.7 93.8 34.8 93.6 34.4 93.3 34.0 93.4 33.6 93.5 33.1 93.9 32.8 93.6 32.4 93.1 32.3 92.7 32.5 92.4 32.8 92.0 33.1 91.6 33.4 91.2 33.6 90.8 33.7 90.5 33.3 90.1 33.5 89.7 33.2 89.8 32.7 90.1 32.3 89.7 32.0 89.6 31.6 89.7 31.2 89.8 30.7 90.0 30.2 90.3 29.8 90.6 30.2 91.0 30.3 91.5 30.1 91.8 29.8 92.1 29.5 92.6 29.4 93.0 29.2Z" style="--h:0"/><path class="uf" data-uf="PE" d="M93.5 32.3 93.9 32.6 93.6 32.9 93.6 33.4 93.3 33.8 93.6 34.2 93.6 34.6 94.0 34.9 94.4 34.6 94.9 34.4 95.0 34.0 95.4 33.6 95.9 33.6 96.3 33.6 96.8 33.5 97.2 33.4 97.6 33.2 97.7 32.7 98.2 32.6 98.7 32.6 99.0 32.8 99.4 33.0 99.4 33.6 99.4 34.1 99.2 34.5 99.1 35.0 99.0 35.4 98.8 35.8 98.7 36.3 98.2 36.3 97.7 36.2 97.3 36.4 96.8 36.3 96.4 36.4 96.1 36.7 95.7 37.1 95.3 37.2 94.9 37.5 94.5 37.4 94.1 37.6 93.7 37.3 93.3 37.0 92.9 36.8 92.5 36.6 92.1 36.4 91.7 36.7 91.4 37.0 91.0 37.3 90.6 37.0 90.3 36.7 90.1 36.2 89.8 36.6 89.5 36.2 89.1 36.1 88.5 35.9 88.2 35.6 87.7 35.5 87.4 35.8 87.0 36.1 86.7 36.5 86.4 36.8 85.8 36.8 85.6 37.3 85.2 37.6 84.8 37.9 84.5 37.5 84.7 37.1 84.3 36.8 84.1 36.4 83.7 36.1 83.3 35.9 83.5 35.5 83.8 35.2 84.3 35.0 84.5 34.7 84.9 34.3 85.0 33.8 84.7 33.4 84.6 32.9 85.0 32.6 85.6 32.5 86.2 32.6 86.6 32.4 87.2 32.4 87.6 32.6 88.0 32.8 88.2 33.2 88.6 33.4 88.9 33.7 89.3 33.4 89.7 33.2 90.0 33.5 90.4 33.4 90.8 33.7 91.2 33.7 91.6 33.4 92.0 33.2 92.3 32.9 92.7 32.6 93.1 32.3Z" style="--h:0.15"/><path class="uf" data-uf="PI" d="M82.0 20.9 82.4 21.1 82.8 21.1 83.2 21.4 83.0 21.8 82.8 22.2 83.0 22.6 83.0 23.1 83.2 23.5 83.2 24.0 83.5 24.3 83.5 24.8 83.4 25.2 83.3 25.7 83.2 26.2 83.5 26.5 83.9 26.9 84.1 27.3 84.0 27.7 84.0 28.2 84.1 28.7 84.2 29.3 84.3 29.7 84.4 30.2 84.5 30.7 84.9 30.8 85.3 31.0 85.3 31.5 85.1 32.0 85.0 32.4 84.7 32.7 84.7 33.2 84.9 33.6 84.9 34.2 84.7 34.6 84.4 34.9 84.0 35.2 83.6 35.4 83.3 35.7 82.8 35.9 82.6 36.3 82.2 36.6 81.9 36.9 81.6 37.3 81.1 37.4 80.6 37.4 80.2 37.7 79.8 37.9 79.4 38.1 79.0 38.0 78.6 37.7 78.2 37.7 77.8 37.4 77.2 37.6 76.8 37.8 76.7 38.2 76.9 38.6 77.0 39.1 76.9 39.5 76.7 40.0 76.3 40.3 76.1 40.7 75.6 40.8 75.1 40.7 74.7 40.9 74.3 41.2 74.0 41.5 73.6 41.3 73.1 41.3 72.8 40.9 72.6 40.4 72.5 40.0 72.3 39.6 71.9 39.8 71.4 39.8 71.5 39.4 71.6 38.9 71.6 38.5 71.7 38.0 71.5 37.5 71.4 37.1 71.3 36.6 71.4 36.1 71.7 35.8 71.9 35.4 72.0 34.9 72.2 34.5 72.3 34.1 72.5 33.6 72.7 33.2 73.1 33.0 73.5 32.8 74.0 32.7 74.4 32.5 74.8 32.2 75.2 31.9 75.6 31.7 75.8 31.3 76.1 31.0 76.6 30.9 77.1 30.8 77.5 31.0 78.0 31.0 78.5 31.0 79.0 30.7 79.1 30.3 79.2 29.8 78.9 29.5 78.6 29.1 78.6 28.7 78.6 28.2 78.8 27.8 79.1 27.4 79.3 27.0 79.1 26.4 78.9 26.0 79.1 25.4 79.0 24.9 78.9 24.3 79.2 23.9 79.6 23.4 79.7 23.0 80.0 22.6 80.5 22.5 80.9 22.4 81.2 22.0 81.5 21.6 81.8 21.2 81.7 20.8Z" style="--h:0"/><path class="uf" data-uf="PR" d="M55.9 71.1 56.3 71.3 56.8 71.4 57.3 71.5 57.7 71.4 58.2 71.6 58.6 71.7 59.0 72.0 59.5 72.0 59.9 72.1 60.4 72.1 60.9 72.1 61.4 72.3 61.7 72.5 62.0 72.9 62.1 73.3 62.1 73.8 62.2 74.2 62.4 74.6 62.6 75.0 62.8 75.4 63.0 75.9 62.9 76.3 63.2 76.5 63.7 76.5 64.1 76.5 64.6 76.5 64.7 77.0 64.7 77.4 65.1 77.3 65.6 77.4 65.7 77.8 65.8 78.2 65.5 78.6 65.1 78.9 64.8 79.4 64.7 79.8 63.9 79.8 63.5 79.9 63.0 80.0 62.6 80.3 62.2 80.5 61.8 80.3 61.5 80.0 61.0 80.0 60.5 80.1 60.1 80.0 59.6 80.0 59.3 80.4 58.9 80.5 58.4 80.5 58.0 80.7 57.9 81.1 57.8 81.6 57.3 81.4 56.8 81.4 56.4 81.4 55.9 81.3 55.5 81.1 55.0 81.0 54.6 80.9 54.2 80.8 53.7 80.8 53.3 80.9 52.9 80.6 52.4 80.6 52.0 80.6 51.7 80.2 51.4 79.8 51.4 79.4 51.2 78.9 50.8 78.9 50.3 78.8 49.9 79.0 49.5 78.9 49.5 78.4 49.8 78.0 49.9 77.6 49.9 77.1 50.1 76.7 50.2 76.2 50.3 75.8 50.2 75.3 50.4 74.9 50.8 74.5 50.9 74.0 51.0 73.6 51.5 73.2 51.8 72.8 51.9 72.3 52.3 71.9 52.7 71.7 53.2 71.4 53.7 71.2 54.2 71.3 54.6 71.2 55.1 71.3 55.6 71.4Z" style="--h:0.25"/><path class="uf" data-uf="RJ" d="M75.0 73.0 74.5 73.2 74.1 72.9 74.2 72.5 74.5 72.1 74.9 71.9 75.4 71.9 75.8 71.5 75.4 71.2 75.0 71.3 74.6 71.1 74.3 70.8 74.7 70.6 75.1 70.4 75.6 70.3 76.0 70.2 76.5 70.0 77.0 69.9 77.5 69.9 77.9 69.7 78.3 69.8 78.8 69.8 79.2 69.6 79.6 69.4 80.1 69.2 80.6 69.0 80.5 68.5 80.7 68.1 80.8 67.7 81.1 67.3 81.4 67.0 81.6 66.6 82.0 66.8 82.0 67.3 82.4 67.6 82.8 67.7 83.3 67.7 83.7 67.8 83.8 68.3 83.8 68.8 83.8 69.3 83.8 69.8 83.4 70.0 82.9 70.2 82.4 70.3 82.0 70.6 81.7 70.9 81.3 71.2 81.5 71.7 81.2 72.0 80.7 72.1 80.3 72.1 79.8 72.1 79.4 72.2 78.9 72.2 78.4 72.1 78.6 71.7 78.2 71.6 78.4 72.0 78.0 72.3 77.6 72.4 77.1 72.4 76.8 72.1 76.3 72.1 76.0 72.3 75.5 72.3 75.0 72.3 74.6 72.4 74.5 72.8 74.9 72.9Z" style="--h:0.4"/><path class="uf" data-uf="RN" d="M93.6 26.3 94.0 26.3 94.4 26.6 94.9 26.7 95.3 26.6 95.8 26.7 96.3 26.6 96.7 26.6 97.2 26.7 97.6 26.8 98.0 27.1 98.2 27.5 98.4 27.9 98.5 28.4 98.6 28.8 98.7 29.3 98.9 29.7 99.1 30.2 98.6 30.4 98.2 30.4 97.7 30.2 97.3 30.1 96.6 30.3 96.2 30.1 95.7 30.0 95.2 29.9 95.3 30.4 95.1 30.8 94.9 31.4 94.5 31.1 94.1 31.0 93.6 31.0 93.2 30.8 92.7 30.8 92.8 30.4 93.0 30.0 93.3 29.6 93.5 29.1 93.0 29.2 92.6 29.4 92.2 29.5 91.8 29.8 91.5 30.1 91.1 30.3 90.6 30.2 90.2 30.0 90.1 29.6 90.4 29.2 90.8 29.0 91.1 28.6 91.2 28.2 91.5 27.8 91.8 27.4 92.0 27.0 92.1 26.6 92.8 26.2 93.3 26.0Z" style="--h:0"/><path class="uf" data-uf="RO" d="M19.5 38.9 19.0 38.8 19.1 38.4 19.5 38.1 19.7 37.7 20.1 37.7 20.6 37.7 21.0 37.9 21.5 38.0 21.9 37.8 22.3 37.5 22.8 37.5 23.2 37.5 23.4 37.1 23.6 36.7 24.0 36.6 24.5 36.6 24.9 36.5 25.4 36.5 25.4 36.1 25.7 35.8 25.8 35.3 26.0 34.9 26.5 34.7 26.6 34.3 28.6 34.0 29.0 34.3 29.3 34.8 29.7 35.0 29.9 35.4 30.3 35.6 30.5 36.1 31.0 36.3 31.2 36.0 31.7 35.9 32.0 36.2 32.0 36.7 32.0 37.2 31.9 37.7 32.1 38.1 32.0 38.6 32.0 39.1 31.8 39.6 32.0 40.0 32.1 40.5 32.1 41.0 32.0 41.4 33.3 41.7 34.7 41.7 35.1 41.9 35.6 42.0 35.9 42.3 36.1 42.7 35.7 43.1 35.6 43.5 35.7 44.0 35.9 44.3 36.1 44.8 36.4 45.1 36.1 45.5 35.8 45.8 35.7 46.2 35.6 46.7 35.2 47.0 35.0 47.5 34.9 47.9 34.5 48.1 34.1 48.4 33.7 48.4 33.3 48.1 32.9 48.1 32.4 48.1 31.9 48.1 31.5 48.1 31.1 47.9 30.7 47.7 30.5 47.2 30.1 47.2 29.7 47.0 29.2 46.9 28.8 46.7 28.5 46.4 28.1 46.1 27.7 46.0 27.2 45.8 26.8 45.6 26.4 45.4 26.0 45.6 25.5 45.5 25.1 45.5 24.7 45.3 24.5 44.9 24.1 44.8 23.6 44.6 23.3 44.3 23.1 43.9 22.7 43.6 22.7 43.2 22.4 42.8 22.3 42.3 22.5 41.9 22.5 41.4 22.4 41.0 22.2 40.6 22.3 40.1 22.5 39.7 22.4 39.2 22.5 38.8 22.2 38.4 21.9 38.7 21.4 38.6 21.0 38.6 20.5 38.7 20.1 38.8 19.6 38.9Z" style="--h:0"/><path class="uf" data-uf="RR" d="M36.1 5.7 36.0 6.2 35.9 6.7 36.0 7.1 36.1 7.5 36.4 7.9 36.6 8.3 36.5 8.8 36.7 9.2 37.1 9.4 37.3 9.8 37.7 10.1 38.1 10.3 38.5 10.4 38.6 12.2 38.6 13.1 37.9 13.1 37.3 13.1 35.8 13.1 35.5 13.5 35.3 13.9 35.1 14.3 35.0 14.8 34.9 15.2 34.9 15.7 34.5 16.0 34.1 15.9 33.8 15.5 33.5 15.2 33.1 15.0 32.6 15.2 32.2 15.4 31.9 15.8 31.9 16.3 31.9 16.7 31.9 17.2 32.1 17.6 31.7 17.4 31.2 17.3 30.9 17.0 30.7 16.5 30.3 16.3 29.9 16.0 29.5 15.7 29.9 15.4 30.1 15.0 30.3 14.6 30.2 14.2 29.9 13.7 29.7 13.2 29.7 12.8 29.5 12.3 29.5 11.8 29.6 11.4 29.4 10.9 29.3 10.3 29.0 9.9 28.9 9.5 29.0 9.0 28.7 8.6 28.2 8.6 27.9 8.2 27.4 8.1 27.2 7.7 26.8 7.6 26.3 7.6 25.9 7.5 25.8 7.1 25.7 6.6 25.5 6.2 25.2 5.8 25.2 5.3 25.3 4.9 25.1 4.4 24.7 4.2 24.4 3.9 24.1 3.5 23.8 3.2 24.2 3.3 24.7 3.2 25.2 3.3 25.6 3.5 25.8 3.9 26.3 3.7 26.7 3.7 27.1 3.9 27.5 3.7 27.8 4.0 28.1 4.3 28.6 4.3 29.0 4.1 28.9 3.6 29.3 3.5 29.7 3.2 30.1 3.2 30.6 3.2 31.0 3.2 31.4 2.9 31.9 2.9 32.1 2.5 32.5 2.4 33.0 2.3 33.4 2.2 33.6 1.7 34.0 1.6 34.3 1.2 34.2 0.8 34.6 0.5 35.1 0.4 35.6 0.5 35.9 0.8 35.8 1.3 35.8 1.7 35.5 2.1 35.9 2.3 36.3 2.4 36.6 2.8 36.8 3.2 36.9 3.6 36.8 4.1 36.5 4.4 36.4 4.9 36.3 5.3 36.1 5.7Z" style="--h:0"/><path class="uf" data-uf="RS" d="M56.0 94.1 55.6 94.4 55.4 94.8 55.8 95.1 55.8 95.6 55.4 95.9 55.1 96.4 54.9 97.0 54.8 97.5 54.5 97.9 54.2 98.3 53.8 98.7 53.4 99.0 53.1 99.3 52.7 99.5 52.2 99.5 52.4 99.0 52.4 98.6 52.4 98.1 52.9 98.0 53.1 97.6 53.4 97.2 53.9 97.5 54.3 97.2 54.5 96.8 54.5 96.3 54.3 95.9 54.0 96.3 53.6 96.5 53.3 96.8 52.8 96.7 52.4 96.5 52.1 96.3 51.9 95.9 51.7 95.5 51.3 95.2 50.9 94.9 49.9 94.3 49.6 93.9 49.2 93.7 48.8 93.6 48.4 93.3 48.0 93.3 47.7 93.0 47.4 92.6 47.1 92.3 46.7 92.5 46.3 92.8 45.9 92.5 45.9 92.1 45.5 91.7 45.2 91.4 44.8 91.2 44.5 90.8 44.2 90.5 43.8 90.3 43.3 90.3 43.0 90.7 42.6 90.8 42.1 90.8 42.3 90.4 42.6 90.1 42.7 89.6 43.2 89.4 43.5 89.1 43.8 88.8 44.1 88.5 44.3 88.0 44.7 87.8 45.0 87.4 45.2 87.0 45.6 86.7 45.9 86.4 46.2 86.0 46.7 86.0 46.5 85.6 46.9 85.4 47.4 85.2 47.6 84.9 48.0 84.6 48.5 84.5 48.7 84.1 49.1 83.9 49.5 83.7 50.0 83.5 50.4 83.4 50.8 83.2 51.1 82.9 51.6 82.8 52.0 82.9 52.5 82.8 53.0 82.9 53.4 82.7 53.8 82.9 54.2 83.0 54.7 83.1 55.2 83.2 55.6 83.1 56.0 83.3 56.3 83.7 56.8 83.7 57.2 83.9 57.7 84.1 58.0 84.4 58.4 84.6 58.7 84.9 58.9 85.3 59.3 85.7 59.6 86.0 60.1 86.1 60.6 86.1 61.0 86.2 61.5 86.1 61.8 86.4 61.5 86.8 61.2 87.2 61.2 87.6 61.0 88.0 61.5 88.1 61.7 88.5 61.4 88.9 61.1 89.4 60.9 89.8 60.7 90.3 60.5 90.7 60.3 91.2 59.9 91.8 59.6 92.3 59.3 92.6 59.0 93.1 58.6 93.4 58.3 93.7 58.0 94.1 57.4 94.4 57.0 94.7 56.5 94.9 56.1 95.3 55.9 94.9 56.4 94.8 56.8 94.6 57.2 94.3 57.5 93.9 57.9 93.8 58.2 93.4 58.1 92.8 58.6 92.7 58.8 92.4 59.2 92.1 59.4 91.6 59.3 91.2 59.7 90.9 59.3 90.8 58.8 90.9 58.4 90.7 58.0 90.5 57.9 90.1 57.8 90.5 58.1 90.9 57.9 91.4 57.8 91.9 57.6 92.3 57.4 92.7 57.0 93.0 56.7 93.3 56.2 93.4 56.0 93.9 56.0 94.4Z" style="--h:0.18"/><path class="uf" data-uf="SC" d="M51.7 81.3 51.8 80.9 52.2 80.6 52.7 80.5 53.1 80.8 53.5 80.8 54.0 80.8 54.5 80.9 54.9 81.0 55.3 81.1 55.8 81.1 56.2 81.3 56.7 81.4 57.1 81.4 57.6 81.7 58.0 81.5 57.9 81.1 58.1 80.7 58.6 80.5 59.1 80.5 59.5 80.2 59.8 80.0 60.3 80.2 60.7 80.1 61.1 79.9 61.5 80.1 61.9 80.3 62.4 80.5 62.8 80.2 63.1 79.9 63.6 79.9 64.4 79.9 64.7 80.2 64.8 80.7 64.6 81.1 64.4 81.5 64.7 81.9 64.6 82.3 64.7 82.8 64.6 83.2 64.5 83.7 64.6 84.1 64.7 84.6 64.6 85.0 64.5 85.4 64.3 85.9 64.2 86.4 63.6 86.7 63.3 87.0 62.8 87.3 62.5 87.6 62.2 87.9 61.8 88.4 61.4 88.1 61.0 88.1 61.2 87.7 61.2 87.3 61.3 86.8 61.7 86.5 61.4 86.1 61.0 86.2 60.5 86.2 60.0 86.1 59.6 86.0 59.2 85.6 58.9 85.3 58.7 84.9 58.3 84.6 57.9 84.3 57.5 84.1 57.1 83.9 56.7 83.7 56.2 83.6 55.9 83.3 55.4 83.2 55.0 83.1 54.5 83.1 54.1 83.0 53.6 82.9 53.2 82.8 52.7 83.0 52.3 82.8 51.9 83.0 51.5 82.9 51.6 82.5 51.8 82.1 51.7 81.6ZM65.1 83.4 65.1 83.9 64.9 84.3 64.9 83.9 65.1 83.5Z" style="--h:0.18"/><path class="uf" data-uf="SE" d="M91.5 38.0 91.9 38.2 92.5 38.5 92.9 38.6 93.3 38.9 93.7 39.1 94.1 39.4 94.4 39.7 94.9 39.8 95.1 40.3 95.5 40.5 95.0 40.6 94.6 40.9 94.2 41.2 93.9 41.6 93.6 42.0 93.3 42.4 93.1 42.9 92.7 43.1 92.2 43.2 91.8 42.9 91.5 42.6 91.3 42.2 91.1 41.8 90.8 41.4 91.0 41.0 91.4 41.1 91.9 40.9 91.9 40.5 92.1 40.0 92.0 39.6 91.7 39.1 91.5 38.8 91.4 38.3Z" style="--h:0"/><path class="uf" data-uf="SP" d="M70.9 74.5 70.6 74.8 70.1 74.9 69.4 75.2 69.0 75.4 68.7 75.7 68.3 76.1 67.9 76.3 67.5 76.6 67.1 76.8 66.7 77.1 66.4 77.5 66.2 77.9 65.7 77.9 65.6 77.4 65.2 77.3 64.8 77.6 64.7 77.1 64.9 76.7 64.5 76.6 64.0 76.5 63.6 76.4 63.1 76.6 62.9 76.1 63.1 75.7 62.8 75.4 62.5 75.0 62.2 74.6 62.2 74.1 62.1 73.7 62.1 73.2 62.0 72.8 61.6 72.5 61.2 72.2 60.8 72.1 60.3 72.1 59.8 72.1 59.3 72.1 59.0 71.8 58.4 71.7 58.0 71.5 57.5 71.4 57.0 71.4 56.4 71.3 56.0 71.1 55.6 71.4 55.1 71.3 54.6 71.2 54.2 71.3 53.7 71.2 53.3 71.4 53.5 71.0 54.0 70.7 54.5 70.4 54.9 70.2 55.3 69.6 55.6 69.3 55.9 68.9 56.1 68.5 56.4 68.1 56.4 67.6 56.7 67.2 57.0 66.9 57.1 66.3 57.4 65.9 57.7 65.6 58.2 65.4 58.5 65.1 58.7 64.7 59.1 64.5 59.6 64.3 60.0 64.1 60.4 64.3 60.9 64.3 61.4 64.5 61.8 64.5 62.3 64.4 62.7 64.6 62.9 65.1 63.2 65.4 63.5 65.0 63.7 65.6 64.0 65.2 64.4 65.0 64.8 65.0 65.3 64.9 65.7 64.8 66.2 64.9 66.5 64.6 67.0 64.6 67.4 64.6 67.8 64.9 68.1 65.3 67.9 65.7 68.3 66.0 68.4 66.4 68.1 66.8 68.3 67.2 68.4 67.7 68.7 68.1 69.1 68.1 69.6 68.2 69.9 68.5 69.6 68.9 69.6 69.4 69.5 69.8 69.5 70.3 69.5 70.8 69.9 71.0 70.2 71.4 70.3 71.8 70.7 71.9 71.2 72.0 71.6 71.8 71.8 71.4 72.3 71.3 72.7 71.4 73.2 71.2 73.6 70.9 74.1 70.8 74.5 71.0 74.8 71.3 75.2 71.3 75.7 71.3 75.6 71.7 75.2 71.9 74.7 72.0 74.4 72.2 74.2 72.6 74.3 73.1 73.9 73.2 73.5 73.5 73.1 73.8 72.7 73.9 72.7 74.3 72.3 74.3 71.8 74.2 71.3 74.3 70.9 74.5Z" style="--h:0.55"/><path class="uf" data-uf="TO" d="M68.6 36.6 68.9 37.0 69.1 37.4 69.5 37.6 69.8 38.0 69.6 38.4 70.0 38.7 70.1 39.2 70.3 39.6 70.8 39.7 71.3 39.8 71.7 39.9 71.6 40.3 71.2 40.5 70.8 40.8 70.6 41.2 70.4 41.6 70.1 42.0 69.7 42.4 69.9 42.8 70.3 43.1 70.7 43.3 70.4 43.6 70.6 44.0 70.2 44.3 70.3 44.8 70.5 45.2 70.8 45.6 70.5 45.9 70.5 46.3 70.9 46.6 70.5 46.8 70.2 46.4 69.8 46.7 69.3 46.7 68.9 47.0 68.5 47.2 68.1 47.4 67.6 47.6 67.3 47.2 67.0 47.6 66.6 47.6 66.1 47.5 65.8 47.2 65.4 47.4 65.0 47.2 64.8 47.6 64.7 47.1 64.4 46.8 64.1 46.4 63.7 46.7 63.4 46.4 63.0 46.7 62.7 47.1 62.1 47.2 61.6 46.9 61.2 46.7 60.7 46.6 60.3 46.3 60.5 45.9 60.6 45.4 60.2 45.7 59.9 46.0 59.7 46.4 59.5 46.0 59.5 45.5 59.5 45.0 59.4 44.6 59.5 44.1 59.3 43.7 59.5 43.2 59.2 42.8 59.4 42.4 59.6 41.9 59.6 41.4 59.6 41.0 59.8 40.5 60.0 40.1 60.1 39.6 60.4 39.2 60.5 38.8 60.7 38.4 60.8 37.9 61.0 37.4 61.3 37.1 61.6 36.6 62.0 36.3 62.4 35.9 62.6 35.3 63.0 35.0 63.1 34.5 63.2 34.0 63.3 33.6 62.9 33.3 62.7 32.8 63.0 32.5 63.2 32.0 63.1 31.5 63.4 31.2 63.9 30.9 64.3 30.8 64.5 30.3 64.8 30.0 65.1 29.6 65.4 29.3 65.6 28.8 65.4 28.4 65.8 28.1 65.4 27.8 65.0 27.5 64.6 27.5 64.7 27.1 65.2 26.9 65.7 27.1 66.1 27.1 66.6 27.4 67.0 27.5 67.4 27.8 67.4 28.3 67.6 28.8 67.6 29.3 67.7 29.9 67.5 30.4 67.4 30.9 67.4 31.4 67.1 31.9 67.0 32.3 67.5 32.5 67.6 32.9 67.9 33.3 68.1 33.7 68.4 34.0 68.9 34.1 69.3 33.9 69.8 33.9 70.0 34.3 69.9 34.8 69.5 35.0 69.2 35.3 68.9 35.7 68.9 36.1 68.7 36.5Z" style="--h:0"/><path class="uf" data-uf="DF" d="M67.9 54.5 67.3 54.6 66.6 54.6 66.1 54.6 65.5 54.6 65.5 54.1 65.6 53.6 65.8 53.2 67.1 53.2 67.6 53.2 67.9 53.6 67.8 54.0 67.8 54.5Z" style="--h:0.5"/></g>
+          <g fill="none" stroke="#C6F432" stroke-width=".4" stroke-linecap="round"><path class="arc" style="animation-delay:0.00s" d="M78.3 72.0 Q73.94999999999999 60.0 69.6 73.7"/><path class="arc" style="animation-delay:0.40s" d="M76.4 64.4 Q73.0 52.400000000000006 69.6 73.7"/><path class="arc" style="animation-delay:0.80s" d="M66.5 53.9 Q68.05 41.9 69.6 73.7"/><path class="arc" style="animation-delay:1.20s" d="M90.2 46.7 Q79.9 34.7 69.6 73.7"/><path class="arc" style="animation-delay:1.60s" d="M99.2 34.2 Q84.4 22.200000000000003 69.6 73.7"/><path class="arc" style="animation-delay:2.00s" d="M90.1 23.2 Q79.85 11.2 69.6 73.7"/><path class="arc" style="animation-delay:2.40s" d="M35.8 21.7 Q52.699999999999996 9.7 69.6 73.7"/><path class="arc" style="animation-delay:2.80s" d="M64.9 17.4 Q67.25 5.399999999999999 69.6 73.7"/><path class="arc" style="animation-delay:3.20s" d="M58.0 90.2 Q63.8 61.7 69.6 73.7"/><path class="arc" style="animation-delay:3.60s" d="M63.0 78.4 Q66.3 61.7 69.6 73.7"/><path class="arc" style="animation-delay:4.00s" d="M45.7 53.4 Q57.65 41.4 69.6 73.7"/></g>
+        </svg>
+        <div class="br-label"><span class="flag"><i></i></span><div><b>BRASIL</b><small>27 UFs · cobertura nacional</small></div></div>
+        <span class="ping" style="left:68.5%;top:72.4%;animation-delay:0.00s"></span><span class="ping c" style="left:76.7%;top:70.8%;animation-delay:0.35s"></span><span class="ping" style="left:74.9%;top:63.6%;animation-delay:0.70s"></span><span class="ping" style="left:65.6%;top:53.7%;animation-delay:1.05s"></span><span class="ping c" style="left:87.9%;top:46.9%;animation-delay:1.40s"></span><span class="ping" style="left:96.4%;top:35.1%;animation-delay:1.75s"></span><span class="ping" style="left:87.8%;top:24.7%;animation-delay:2.10s"></span><span class="ping c" style="left:36.6%;top:23.3%;animation-delay:2.45s"></span><span class="ping" style="left:64.1%;top:19.2%;animation-delay:2.80s"></span><span class="ping" style="left:57.5%;top:87.9%;animation-delay:3.15s"></span><span class="ping c" style="left:62.3%;top:76.8%;animation-delay:3.50s"></span><span class="ping" style="left:45.9%;top:53.2%;animation-delay:3.85s"></span>
+        <div class="core"><small>RECEBIDO HOJE · BRASIL</small><b id="coreVal">R$ 284.392</b><small style="color:var(--muted)">+18,4% vs ontem</small></div>
+        <div class="float f1"><span class="ic">✓</span><div>Pix aprovado<small>Loja Aurora · São Paulo</small></div><b style="color:var(--lime)">+R$ 289,90</b></div>
+        <div class="float f2"><span class="ic" style="color:var(--cyan);background:rgba(71,215,255,.12)">⚡</span><div>Confirmado em<small>webhook entregue</small></div><b>1,8s</b></div>
+        <div class="float f3"><span class="ic">↗</span><div>Saque realizado<small>conta nominal</small></div><b>R$ 12.400</b></div>
+      </div>
+    </div>
+
+    <div class="hero-stats">
+      <div><b data-count="24">0</b><span>HORAS · 7 DIAS · PIX</span></div>
+      <div><b>&lt; 3s</b><span>CONFIRMAÇÃO DE PAGAMENTO</span></div>
+      <div><b>99,9%</b><span>DISPONIBILIDADE DA API</span></div>
+      <div><b>D+0</b><span>DINHEIRO DISPONÍVEL</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- TRUST -->
+<div class="trust">
+  <div class="wrap">
+    <p>Segurança e conformidade</p>
+    <div class="badges">
+      <span class="badge"><i>⛨</i>Infraestrutura bancária regulada</span>
+      <span class="badge"><i>◎</i>Conta nominal PF &amp; PJ</span>
+      <span class="badge"><i>⚿</i>Autenticação MFA</span>
+      <span class="badge"><i>☰</i>KYC &amp; PLD</span>
+      <span class="badge"><i>⌂</i>LGPD</span>
+    </div>
+  </div>
+</div>
+
+<!-- SOLUÇÕES -->
+<section id="solucoes">
+  <div class="wrap">
+    <div class="head">
+      <div><span class="eyebrow"><span class="n">01</span> Soluções</span><h2>Tudo para receber,<br>pagar e <span class="hl">crescer</span>.</h2></div>
+      <div><p class="lead">Seis produtos conectados ao mesmo saldo, ao mesmo painel e à mesma API.</p>
+        <div class="sol-nav" style="margin-top:20px"><button onclick="slide(-1)">←</button><button onclick="slide(1)">→</button></div></div>
+    </div>
+    <div class="sol-track" id="track">
+      <div class="sol"><span class="num">01 / 06</span>
+        <div class="art"><svg width="90" height="90" viewBox="0 0 90 90"><rect x="5" y="5" width="80" height="80" rx="12" fill="#fff"/><g fill="#05080F"><rect x="14" y="14" width="20" height="20" rx="3"/><rect x="56" y="14" width="20" height="20" rx="3"/><rect x="14" y="56" width="20" height="20" rx="3"/><rect x="40" y="40" width="8" height="8"/><rect x="56" y="56" width="8" height="8"/><rect x="68" y="66" width="8" height="10"/><rect x="40" y="62" width="8" height="14"/></g></svg></div>
+        <span class="cat">EM TEMPO REAL</span><h3>Pix cash-in</h3><p>QR Code dinâmico ou copia e cola, com confirmação instantânea por webhook.</p>
+        <div class="metric"><span>CONFIRMAÇÃO · &lt;3s</span><span class="sol-arrow">→</span></div></div>
+      <div class="sol"><span class="num">02 / 06</span>
+        <div class="art"><span class="mono" style="font-size:32px;color:var(--lime)">→ R$</span></div>
+        <span class="cat">PAGAMENTOS</span><h3>Pix cash-out</h3><p>Pague fornecedores e faça saques para qualquer chave Pix, a qualquer hora.</p>
+        <div class="metric"><span>SAQUE · D+0</span><span class="sol-arrow">→</span></div></div>
+      <div class="sol"><span class="num">03 / 06</span>
+        <div class="art"><svg width="180" height="60"><g fill="#C6F432">%BARS%</g></svg></div>
+        <span class="cat">BOLETO</span><h3>Boleto registrado</h3><p>Emita pelo painel ou API, com baixa automática e conciliação.</p>
+        <div class="metric"><span>REGISTRADO · API</span><span class="sol-arrow">→</span></div></div>
+      <div class="sol"><span class="num">04 / 06</span>
+        <div class="art"><span style="font-size:13px" class="mono">PJ · <b style="color:var(--lime)">NOMINAL</b> · PF</span></div>
+        <span class="cat">CONTA</span><h3>Conta digital nominal</h3><p>Conta no seu CPF ou CNPJ, com sócios, representantes e limites configuráveis.</p>
+        <div class="metric"><span>PF · MEI · PJ</span><span class="sol-arrow">→</span></div></div>
+      <div class="sol"><span class="num">05 / 06</span>
+        <div class="art"><span class="mono" style="color:var(--cyan)">POST /webhook 200 ✓</span></div>
+        <span class="cat">DESENVOLVEDORES</span><h3>API &amp; Webhooks</h3><p>Chaves de API, requisições assinadas e eventos em tempo real para cada transação.</p>
+        <div class="metric"><span>REST · SWAGGER</span><span class="sol-arrow">→</span></div></div>
+      <div class="sol"><span class="num">06 / 06</span>
+        <div class="art"><span style="font-size:15px">🛒 Pedido #4821 · <b style="color:var(--lime)">Pix aprovado</b></span></div>
+        <span class="cat">E-COMMERCE</span><h3>Checkout WooCommerce</h3><p>Plugue sua loja WordPress e receba por Pix com métricas por integração.</p>
+        <div class="metric"><span>PLUGIN OFICIAL</span><span class="sol-arrow">→</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- OPERAÇÃO AO VIVO -->
+<section class="ops">
+  <div class="wrap">
+    <div class="head">
+      <div><span class="eyebrow"><span class="n">02</span> Painel financeiro</span><h2>Sua operação,<br>ao vivo.</h2></div>
+      <p class="lead">Volume, aprovação, extrato e conciliação atualizados em tempo real. Exatamente o que você vê no painel Geopay.</p>
+    </div>
+    <div class="ops-grid">
+      <div class="panel p-vol">
+        <div class="lbl"><span>VOLUME PROCESSADO · HOJE</span><span class="live">AO VIVO</span></div>
+        <div class="big">R$ <span id="vol">2.847.650</span></div>
+        <div class="kpis">
+          <div><b id="tps">1.284</b><span>TRANSAÇÕES/MIN</span></div>
+          <div><b>98,7%</b><span>TAXA DE APROVAÇÃO</span></div>
+          <div><b>142ms</b><span>LATÊNCIA MÉDIA</span></div>
+        </div>
+        <svg class="spark" viewBox="0 0 400 90" preserveAspectRatio="none">
+          <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C6F432" stop-opacity=".35"/><stop offset="1" stop-color="#C6F432" stop-opacity="0"/></linearGradient></defs>
+          <path d="M0 70 L30 62 60 66 90 50 120 54 150 40 180 46 210 30 240 36 270 22 300 28 330 14 360 18 400 6 V90 H0Z" fill="url(#g)"/>
+          <path d="M0 70 L30 62 60 66 90 50 120 54 150 40 180 46 210 30 240 36 270 22 300 28 330 14 360 18 400 6" fill="none" stroke="#C6F432" stroke-width="2"/>
+        </svg>
+      </div>
+      <div class="panel p-stream">
+        <div class="lbl"><span>TRANSAÇÕES · STREAM</span><span class="live">AO VIVO</span></div>
+        <div class="stream" id="stream"></div>
+      </div>
+      <div class="panel p-map">
+        <div class="lbl"><span>REDE · BRASIL</span><span>27 UFs</span></div>
+        <svg viewBox="0 0 200 150" style="width:100%;margin-top:14px">
+          <g fill="#24304b">%DOTS%</g>
+          <g fill="#C6F432"><circle cx="128" cy="104" r="3"/><circle cx="140" cy="98" r="2.5"/><circle cx="120" cy="118" r="2"/><circle cx="150" cy="70" r="2"/><circle cx="110" cy="82" r="2.5"/></g>
+        </svg>
+        <div class="mono" style="font-size:12px;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap"><span><b style="color:var(--lime)">●</b> SP · RJ · MG</span><span>PR · BA · DF</span></div>
+      </div>
+      <div class="panel p-uptime">
+        <div class="lbl"><span>DISPONIBILIDADE · 90D</span></div>
+        <div style="font-size:44px;font-weight:700;letter-spacing:-.04em;margin-top:10px">99,98%</div>
+        <div class="uptime" id="up"></div>
+        <span class="mono" style="font-size:11px;color:var(--muted)">TODOS OS SISTEMAS OPERACIONAIS</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMO FUNCIONA -->
+<section>
+  <div class="wrap">
+    <div class="head">
+      <div><span class="eyebrow"><span class="n">03</span> Como funciona</span><h2>Do cadastro ao<br>primeiro Pix.</h2></div>
+      <p class="lead">Onboarding 100% digital. Sem papelada, sem agência, sem fila.</p>
+    </div>
+    <div class="route">
+      <div class="step"><div class="dot">ETAPA 01<span>~2 min</span></div><h4>Crie sua conta</h4><p>CPF ou CNPJ, e-mail e telefone validados na hora por SMS.</p><div class="bar"><i style="width:25%"></i></div></div>
+      <div class="step"><div class="dot">ETAPA 02<span>~3 min</span></div><h4>Verifique a identidade</h4><p>Envie documentos e selfie. KYC automatizado e análise cadastral.</p><div class="bar"><i style="width:50%"></i></div></div>
+      <div class="step"><div class="dot">ETAPA 03<span>~1 min</span></div><h4>Escolha o plano</h4><p>Cadastre suas chaves Pix, defina limites e gere sua chave de API.</p><div class="bar"><i style="width:75%"></i></div></div>
+      <div class="step"><div class="dot">ETAPA 04<span>agora</span></div><h4>Comece a receber</h4><p>Cobre pelo painel, pela API ou pelo checkout da sua loja.</p><div class="bar"><i style="width:100%"></i></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- DEV -->
+<section id="dev" style="background:var(--ink-2);border-block:1px solid var(--line)">
+  <svg class="topo" style="opacity:.4"><rect width="100%" height="100%" fill="url(#topo)"/></svg>
+  <div class="wrap dev-grid z">
+    <div>
+      <span class="eyebrow"><span class="n">04</span> Desenvolvedores</span>
+      <h2>Integre em minutos.<br><span class="hl">Escale sem limite.</span></h2>
+      <p class="lead">API REST versionada, documentação interativa em Swagger e webhooks para cada evento.</p>
+      <div class="dx-stats">
+        <div><b>5 min</b><span>PARA A 1ª COBRANÇA</span></div>
+        <div><b>REST</b><span>API VERSIONADA /V1</span></div>
+        <div><b>HMAC</b><span>REQUISIÇÕES ASSINADAS</span></div>
+        <div><b>99,9%</b><span>SLA DA API</span></div>
+      </div>
+      <ul class="checks">
+        <li>Webhooks com reenvio automático em caso de falha</li>
+        <li>Consulta de saldo e limites em tempo real</li>
+        <li>Ambiente sandbox para testar sem custo</li>
+      </ul>
+      <div style="display:flex;gap:12px;margin-top:30px;flex-wrap:wrap"><a href="#" class="btn btn-primary">Ler a documentação →</a><a href="#" class="btn btn-ghost">Abrir sandbox</a></div>
+    </div>
+    <div class="code">
+      <div class="code-top"><i></i><i></i><i></i><span class="ep"><em>POST</em>/v1/pix/qr-code</span></div>
+      <div class="tabs" id="tabs"><button class="on" data-l="curl">cURL</button><button data-l="node">Node.js</button><button data-l="php">PHP</button><button data-l="py">Python</button></div>
+      <pre id="codeBox"></pre>
+      <div class="resp"><span class="ok">● 201 Created</span><span>142ms</span><span>1,2 KB</span><button onclick="runReq()">▶ EXECUTAR</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- INTEGRAÇÕES -->
+<section>
+  <div class="wrap">
+    <div class="head">
+      <div><span class="eyebrow"><span class="n">05</span> Integrações</span><h2>Conecte onde<br>você já vende.</h2></div>
+      <p class="lead">Plugins prontos e uma API aberta para qualquer plataforma.</p>
+    </div>
+    <div class="int-grid">
+      <div class="int"><div class="lg" style="background:#7f54b3;color:#fff">Wo</div><h4>WooCommerce</h4><p>Pix no checkout da sua loja WordPress.</p><span class="st">● DISPONÍVEL</span></div>
+      <div class="int"><div class="lg" style="background:var(--ink-4);color:var(--lime)">{ }</div><h4>API REST</h4><p>Qualquer linguagem, qualquer stack.</p><span class="st">● DISPONÍVEL</span></div>
+      <div class="int"><div class="lg" style="background:var(--ink-4);color:var(--cyan)">⇄</div><h4>Webhooks</h4><p>Eventos de pagamento no seu servidor.</p><span class="st">● DISPONÍVEL</span></div>
+      <div class="int"><div class="lg" style="background:var(--ink-4);color:var(--muted)">+</div><h4>Outras plataformas</h4><p>Shopify, Nuvemshop e mais.</p><span class="st soon">○ EM BREVE</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- TARIFAS -->
+<section id="tarifas" style="background:var(--ink-2);border-block:1px solid var(--line)">
+  <div class="wrap">
+    <div class="head" style="justify-content:center;text-align:center;flex-direction:column;align-items:center">
+      <div><span class="eyebrow"><span class="n">06</span> Tarifas</span><h2>Preço justo.<br>Sem letra miúda.</h2></div>
+      <p class="lead" style="max-width:520px">Sem mensalidade, sem taxa de adesão. Você paga apenas pelo que recebe.</p>
+    </div>
+    <div class="price-grid">
+      <div class="price"><span class="pl">PIX</span><div class="fee">R$ 0,49<small> /transação</small></div><span class="sub">taxa fixa · in &amp; out</span>
+        <ul><li>Pix em tempo real 24/7</li><li>QR Code dinâmico ilimitado</li><li>Webhooks de confirmação</li><li>Sem mensalidade</li></ul>
+        <a href="#" class="btn btn-ghost">Começar</a></div>
+      <div class="price feat"><span class="pl">NEGÓCIOS</span><div class="fee">0,69%<small> /venda</small></div><span class="sub">para lojas e e-commerces</span>
+        <ul><li>Tudo do plano Pix</li><li>Plugin WooCommerce</li><li>API e chaves ilimitadas</li><li>Painel financeiro e conciliação</li><li>Saque D+0</li></ul>
+        <a href="#" class="btn btn-primary">Escolher Negócios →</a></div>
+      <div class="price"><span class="pl">BOLETO</span><div class="fee">R$ 2,99<small> /boleto pago</small></div><span class="sub">recebimento D+1</span>
+        <ul><li>Boleto registrado</li><li>Emissão por API ou painel</li><li>Multa e juros configuráveis</li><li>Baixa automática</li></ul>
+        <a href="#" class="btn btn-ghost">Começar</a></div>
+    </div>
+    <p class="mono" style="color:var(--dim);font-size:12px;margin-top:26px;text-align:center">* Valores ilustrativos do protótipo — na versão final virão dos planos cadastrados no backend.</p>
+  </div>
+</section>
+
+<!-- COMPARATIVO -->
+<section>
+  <div class="wrap">
+    <div class="head">
+      <div><span class="eyebrow"><span class="n">07</span> Comparativo</span><h2>Por que a Geopay?</h2></div>
+      <p class="lead">Compare com maquininhas e processadoras de cartão tradicionais.</p>
+    </div>
+    <div class="cmp-wrap">
+    <table class="cmp">
+      <tr><th>RECURSO</th><th>GEOPAY</th><th>TRADICIONAL</th></tr>
+      <tr><td>Dinheiro na conta</td><td class="yes">Na hora (D+0)</td><td>D+30 ou antecipação paga</td></tr>
+      <tr><td>Taxa por venda</td><td class="yes">A partir de R$ 0,49</td><td>Até 4,99% + aluguel</td></tr>
+      <tr><td>Chargeback</td><td class="yes">Não existe no Pix</td><td>Risco constante</td></tr>
+      <tr><td>Conta nominal no seu CNPJ</td><td class="yes">✓ Sim</td><td class="no">✕ Conta bolsão</td></tr>
+      <tr><td>API e webhooks</td><td class="yes">✓ Inclusos</td><td>Pago à parte</td></tr>
+      <tr><td>Mensalidade</td><td class="yes">R$ 0</td><td>R$ 30 – R$ 150</td></tr>
+    </table>
+    </div>
+  </div>
+</section>
+
+<!-- SEGURANÇA -->
+<section id="seguranca" style="background:var(--ink-2);border-block:1px solid var(--line)">
+  <div class="wrap sec-grid">
+    <div class="shield">
+      <div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div>
+      <div class="lock"><svg width="50%" viewBox="0 0 24 24" fill="none" stroke="#05080F" stroke-width="2.2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+      <span class="orb" style="top:4%;left:40%">MFA</span>
+      <span class="orb" style="top:30%;right:-2%">KYC</span>
+      <span class="orb" style="bottom:22%;right:4%">PLD/FT</span>
+      <span class="orb" style="bottom:6%;left:20%">LGPD</span>
+      <span class="orb" style="top:40%;left:-4%">HMAC</span>
+    </div>
+    <div>
+      <span class="eyebrow"><span class="n">08</span> Segurança</span>
+      <h2>Seu dinheiro protegido em cada coordenada.</h2>
+      <div class="sec-list">
+        <div class="sec-item"><span class="ic">◎</span><div><b>Conta nominal</b><p>O dinheiro fica no seu CPF ou CNPJ, nunca numa conta bolsão de terceiros.</p></div></div>
+        <div class="sec-item"><span class="ic">⚿</span><div><b>Autenticação em dois fatores</b><p>Código por SMS ou e-mail em cada acesso e operação sensível.</p></div></div>
+        <div class="sec-item"><span class="ic">☰</span><div><b>KYC e prevenção à fraude</b><p>Validação de documentos, verificação PEP e revisão cadastral contínua.</p></div></div>
+        <div class="sec-item"><span class="ic">▣</span><div><b>Limites e bloqueio imediato</b><p>Defina limites por operação e bloqueie a conta em um clique.</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<div class="cta">
+  <svg class="topo" style="opacity:.12;filter:invert(1)"><rect width="100%" height="100%" fill="url(#topo)"/></svg>
+  <div class="cta-grid">
+    <div>
+      <span class="mono" style="font-size:12px;letter-spacing:.16em">VAMOS CONVERSAR</span>
+      <h2 style="margin-top:14px">Coloque o seu negócio no mapa do Pix.</h2>
+      <p>Conte como é a sua operação. A gente mostra o caminho mais curto até o seu primeiro Pix recebido.</p>
+      <a href="#" class="btn btn-primary">Criar minha conta grátis →</a>
+      <div class="cta-list"><span>✓ Sem mensalidade</span><span>✓ Onboarding em 5 min</span><span>✓ Suporte humano</span></div>
+    </div>
+    <div class="cta-stats">
+      <div><b>2.000+</b><span>NEGÓCIOS ATIVOS</span></div>
+      <div><b>R$ 80M+</b><span>PROCESSADOS POR MÊS</span></div>
+      <div><b>99,9%</b><span>DISPONIBILIDADE</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="wrap faq-grid">
+    <div>
+      <span class="eyebrow"><span class="n">09</span> Ajuda</span>
+      <h2>Tudo o que você quer saber.</h2>
+      <p class="lead">Não achou sua pergunta? Fale com a gente.</p>
+      <div class="help">
+        <a href="#"><div>Documentação técnica<small>ENDPOINTS · WEBHOOKS · SANDBOX</small></div>↗</a>
+        <a href="#"><div>Falar com especialista<small>RESPOSTA EM ATÉ 2H ÚTEIS</small></div>↗</a>
+        <a href="#"><div>Central de ajuda<small>TUTORIAIS E GUIAS</small></div>↗</a>
+      </div>
+    </div>
+    <div>
+      <details open><summary><span class="q">01</span>O que é um gateway de pagamento Pix?</summary><p>É a plataforma que gera cobranças Pix, confirma os pagamentos em tempo real e repassa o valor para a sua conta, com painel, API e webhooks para automatizar tudo.</p></details>
+      <details><summary><span class="q">02</span>Quais documentos preciso para abrir conta?</summary><p>Pessoa física: documento com foto, CPF, comprovante de residência e selfie. Pessoa jurídica: cartão CNPJ, contrato social e documentos dos sócios e representantes legais.</p></details>
+      <details><summary><span class="q">03</span>Em quanto tempo o dinheiro fica disponível?</summary><p>Pagamentos via Pix são confirmados em segundos e o saldo fica disponível na hora para saque (D+0). Boletos compensam em D+1.</p></details>
+      <details><summary><span class="q">04</span>A Geopay é um banco?</summary><p>Não. A Geopay é uma plataforma de pagamentos que opera sobre infraestrutura bancária regulada, oferecendo conta nominal em seu nome.</p></details>
+      <details><summary><span class="q">05</span>Posso abrir conta como MEI?</summary><p>Sim. Atendemos pessoas físicas, MEI e empresas de todos os portes.</p></details>
+      <details><summary><span class="q">06</span>Como integro com minha loja?</summary><p>Use o plugin oficial para WooCommerce ou a API REST com webhooks para qualquer plataforma.</p></details>
+      <details><summary><span class="q">07</span>Não recebi o código de verificação. E agora?</summary><p>Confira a caixa de spam e o número cadastrado. Você pode solicitar um novo código por SMS ou e-mail na tela de login.</p></details>
+      <details><summary><span class="q">08</span>Existe mensalidade ou taxa de adesão?</summary><p>Não. Você paga apenas uma tarifa por transação recebida.</p></details>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <a href="#" class="logo" style="color:var(--text);margin-bottom:16px"><img src="data:image/png;base64,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" alt="Geopay" style="height:32px;width:auto"></a>
+        <p style="max-width:300px">Gateway de pagamento Pix, conta digital e API para negócios que querem receber sem fricção.</p>
+        <form class="news" onsubmit="return false"><input placeholder="Seu e-mail"><button>Assinar</button></form>
+      </div>
+      <div><h5>Produtos</h5><a href="#">Pix cash-in</a><a href="#">Pix cash-out</a><a href="#">Boleto</a><a href="#">Conta digital</a><a href="#">WooCommerce</a></div>
+      <div><h5>Desenvolvedores</h5><a href="#">Documentação</a><a href="#">Referência da API</a><a href="#">Webhooks</a><a href="#">Sandbox</a><a href="#">Status</a></div>
+      <div><h5>Empresa</h5><a href="#">Sobre</a><a href="#">Carreiras</a><a href="#">Contato</a></div>
+      <div><h5>Legal</h5><a href="#">Termos de uso</a><a href="#">Privacidade</a><a href="#">Política PLD/FT</a><a href="#">Ouvidoria</a></div>
+    </div>
+    <div class="legal mono"><span>© 2026 Geopay · geopay.digital</span><span>Feito no Brasil 🇧🇷</span></div>
+    <div class="mega">geopay</div>
+  </div>
+</footer>
+
+<div class="toast" id="toast"><span class="ic">✓</span><div>Venda recebida<small>Pagamento via Pix</small></div><b id="toastV">+R$ 1.000,00</b></div>
+
+<script>
+// barras do boleto
+document.querySelectorAll('.art svg g').forEach(g=>{if(g.innerHTML.includes('%BARS%')){let h='',x=0;while(x<175){const w=[2,3,5][Math.floor(Math.random()*3)];h+=`<rect x="${x}" y="0" width="${w}" height="60"/>`;x+=w+3}g.innerHTML=h}});
+// mapa de pontos
+(()=>{const g=document.querySelector('.p-map g');let h='';
+ const inside=(x,y)=>{const dx=(x-110)/70,dy=(y-80)/62;return dx*dx+dy*dy<1&&!(x>165&&y<50)&&!(x<55&&y>110)};
+ for(let y=10;y<150;y+=7)for(let x=30;x<190;x+=7)if(inside(x,y))h+=`<circle cx="${x}" cy="${y}" r="1.6"/>`;g.innerHTML=h})();
+// uptime
+(()=>{const u=document.getElementById('up');for(let i=0;i<45;i++){const e=document.createElement('i');if(i===17||i===33)e.className='w';u.appendChild(e)}})();
+// stream
+const names=['Loja Aurora','Studio Pixel','Café Mapa','Nebula Store','Orbe&Co','Veloz Log','Casa Norte','Rota Sul'];
+const fmt=v=>v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const st=document.getElementById('stream');
+function addRow(){const b=Math.random()<.2;const v=Math.random()*1800+20;
+ const r=document.createElement('div');r.className='row';
+ r.innerHTML=`<div><span class="tag ${b?'b':''}">${b?'BOLETO':'PIX'} · IN</span>${names[Math.floor(Math.random()*names.length)]}<div class="t">agora</div></div><b>+R$ ${fmt(v)}</b>`;
+ st.prepend(r);[...st.children].forEach((c,i)=>{if(i>0)c.querySelector('.t').textContent=`há ${i*3}s`});if(st.children.length>9)st.lastChild.remove();
+ vol+=v;document.getElementById('vol').textContent=Math.round(vol).toLocaleString('pt-BR');}
+let vol=2847650;for(let i=0;i<8;i++)addRow();setInterval(addRow,2200);
+setInterval(()=>{document.getElementById('tps').textContent=(1200+Math.floor(Math.random()*180)).toLocaleString('pt-BR')},1500);
+// core counter
+let core=284392;setInterval(()=>{core+=Math.floor(Math.random()*900);document.getElementById('coreVal').textContent='R$ '+core.toLocaleString('pt-BR')},1800);
+// toast
+const toast=document.getElementById('toast');
+setInterval(()=>{document.getElementById('toastV').textContent='+R$ '+fmt(Math.random()*2800+50);toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),3200)},7000);
+// solutions slider
+function slide(d){document.getElementById('track').scrollBy({left:d*360,behavior:'smooth'})}
+// code tabs
+const code={
+curl:`<span class="c"># Gera uma cobrança Pix com QR Code dinâmico</span>
+<span class="k">curl</span> -X POST https://api.geopay.digital/v1/pix/qr-code \\
+  -H <span class="s">"x-api-key: gp_live_••••••••"</span> \\
+  -H <span class="s">"x-signature: 9f2c…a71e"</span> \\
+  -H <span class="s">"Content-Type: application/json"</span> \\
+  -d <span class="s">'{
+    "amount": <span class="n">289.90</span>,
+    "description": "Pedido #10482",
+    "expiresIn": <span class="n">900</span>,
+    "webhookUrl": "https://sualoja.com/webhook"
+  }'</span>`,
+node:`<span class="k">import</span> { Geopay } <span class="k">from</span> <span class="s">'@geopay/node'</span>;
+
+<span class="k">const</span> geopay = <span class="k">new</span> Geopay(process.env.GEOPAY_KEY);
+
+<span class="k">const</span> qr = <span class="k">await</span> geopay.pix.qrCode.create({
+  amount: <span class="n">289.90</span>,
+  description: <span class="s">'Pedido #10482'</span>,
+  expiresIn: <span class="n">900</span>,
+});
+
+console.log(qr.emv); <span class="c">// 00020126…6304A1F3</span>`,
+php:`<span class="k">$geopay</span> = <span class="k">new</span> \\Geopay\\Client(getenv(<span class="s">'GEOPAY_KEY'</span>));
+
+<span class="k">$qr</span> = <span class="k">$geopay</span>->pix->qrCode->create([
+  <span class="s">'amount'</span>      => <span class="n">289.90</span>,
+  <span class="s">'description'</span> => <span class="s">'Pedido #10482'</span>,
+  <span class="s">'expiresIn'</span>   => <span class="n">900</span>,
+]);
+
+<span class="k">echo</span> <span class="k">$qr</span>->emv;`,
+py:`<span class="k">from</span> geopay <span class="k">import</span> Geopay
+
+geopay = Geopay(os.environ[<span class="s">"GEOPAY_KEY"</span>])
+
+qr = geopay.pix.qr_code.create(
+    amount=<span class="n">289.90</span>,
+    description=<span class="s">"Pedido #10482"</span>,
+    expires_in=<span class="n">900</span>,
+)
+<span class="k">print</span>(qr.emv)`};
+const box=document.getElementById('codeBox');box.innerHTML=code.curl;
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#tabs button').forEach(x=>x.classList.remove('on'));b.classList.add('on');box.innerHTML=code[b.dataset.l]});
+function runReq(){box.innerHTML=`<span class="c"># → 201 Created · 142ms</span>
+{
+  <span class="s">"id"</span>: <span class="s">"qr_7Hk2mP9x"</span>,
+  <span class="s">"status"</span>: <span class="s">"ACTIVE"</span>,
+  <span class="s">"amount"</span>: <span class="n">289.90</span>,
+  <span class="s">"emv"</span>: <span class="s">"00020126580014br.gov.bcb.pix…6304A1F3"</span>,
+  <span class="s">"expiresAt"</span>: <span class="s">"2026-11-23T15:14:59Z"</span>
+}`}
+</script>
+</body>
+</html>
