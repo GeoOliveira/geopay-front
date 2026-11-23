@@ -1,11 +1,27 @@
 import { NextResponse } from "next/server";
 
-const FORMS = ["contato", "denuncia", "reembolso"] as const;
+const FORMS = {
+  contato: { subject: "Contato pelo site", to: () => process.env.FORMS_TO_CONTATO ?? process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "suporte@geopay.digital" },
+  denuncia: { subject: "Nova denúncia", to: () => process.env.FORMS_TO_DENUNCIA ?? process.env.NEXT_PUBLIC_COMPLIANCE_EMAIL ?? "denuncia@geopay.digital" },
+  reembolso: { subject: "Pedido de reembolso", to: () => process.env.FORMS_TO_REEMBOLSO ?? process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "suporte@geopay.digital" },
+} as const;
+type FormName = keyof typeof FORMS;
+
+const LABELS: Record<string, string> = {
+  nome: "Nome", email: "E-mail", telefone: "Telefone", documento: "CPF/CNPJ", cpf: "CPF", assunto: "Assunto",
+  mensagem: "Mensagem", tipo: "Tipo", data_ocorrido: "Data do ocorrido", data_pagamento: "Data do pagamento",
+  valor: "Valor (R$)", id_transacao: "ID da transação", denunciado: "Denunciado", relato: "Relato",
+  vendedor: "Vendedor", motivo: "Motivo", detalhes: "Detalhes", consent: "Consentimento",
+};
+
+const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 
 /**
- * Recebe os formulários do site e encaminha para FORMS_WEBHOOK_URL
- * (ex.: endpoint do geopay-backend, Zapier, n8n, Slack). Sem a variável,
- * responde 503 para que o usuário seja orientado a usar o e-mail.
+ * Recebe os formulários do site e envia por e-mail usando a API do SendGrid
+ * (o mesmo provedor do geopay-backend).
+ * Variáveis: SENDGRID_API_KEY, FORMS_FROM_EMAIL (remetente verificado no SendGrid)
+ * e, opcionalmente, FORMS_TO_CONTATO / FORMS_TO_DENUNCIA / FORMS_TO_REEMBOLSO.
  */
 export async function POST(req: Request) {
   let body: { form?: string; data?: Record<string, unknown> };
@@ -15,34 +31,48 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Requisição inválida." }, { status: 400 });
   }
   const { form, data } = body;
-  if (!form || !FORMS.includes(form as (typeof FORMS)[number]) || !data || typeof data !== "object") {
+  if (!form || !(form in FORMS) || !data || typeof data !== "object") {
     return NextResponse.json({ error: "Formulário inválido." }, { status: 400 });
   }
-  // honeypot preenchido = robô; finge sucesso
-  if (data.website) return NextResponse.json({ ok: true, protocol: "000000" });
+  if (data.website) return NextResponse.json({ ok: true, protocol: "000000" }); // honeypot
   if (data.consent !== "sim") return NextResponse.json({ error: "É preciso aceitar o tratamento dos dados." }, { status: 400 });
 
-  const clean: Record<string, string> = {};
+  const fields: [string, string][] = [];
   for (const [k, v] of Object.entries(data)) {
     if (k === "website") continue;
-    clean[k] = String(v ?? "").slice(0, 4000);
+    const val = String(v ?? "").trim().slice(0, 4000);
+    if (val) fields.push([k, val]);
   }
 
-  const protocol = `${Date.now().toString(36).toUpperCase()}`;
-  const target = process.env.FORMS_WEBHOOK_URL;
-  if (!target) {
+  const apiKey = process.env.SENDGRID_API_KEY;
+  const from = process.env.FORMS_FROM_EMAIL;
+  if (!apiKey || !from) {
     return NextResponse.json({ error: "O envio de formulários ainda não está configurado." }, { status: 503 });
   }
+
+  const cfg = FORMS[form as FormName];
+  const protocol = Date.now().toString(36).toUpperCase();
+  const replyTo = String(data.email ?? "");
+  const rows = fields.map(([k, v]) => `<tr><td style="padding:8px 12px;color:#666;vertical-align:top;white-space:nowrap">${esc(LABELS[k] ?? k)}</td><td style="padding:8px 12px;white-space:pre-wrap">${esc(v)}</td></tr>`).join("");
+  const html = `<div style="font-family:Arial,sans-serif;font-size:14px"><h2 style="margin:0 0 6px">${esc(cfg.subject)}</h2><p style="color:#666;margin:0 0 16px">Protocolo ${protocol} · ${new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</p><table style="border-collapse:collapse;border:1px solid #eee">${rows}</table></div>`;
+  const text = fields.map(([k, v]) => `${LABELS[k] ?? k}: ${v}`).join("\n");
+
   try {
-    const res = await fetch(target, {
+    const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(process.env.FORMS_WEBHOOK_TOKEN ? { Authorization: `Bearer ${process.env.FORMS_WEBHOOK_TOKEN}` } : {}),
-      },
-      body: JSON.stringify({ form, protocol, receivedAt: new Date().toISOString(), data: clean }),
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        personalizations: [{ to: [{ email: cfg.to() }] }],
+        from: { email: from, name: "Site Geopay" },
+        ...(isEmail(replyTo) ? { reply_to: { email: replyTo } } : {}),
+        subject: `[${protocol}] ${cfg.subject}`,
+        content: [{ type: "text/plain", value: `Protocolo ${protocol}\n\n${text}` }, { type: "text/html", value: html }],
+      }),
     });
-    if (!res.ok) throw new Error(String(res.status));
+    if (!res.ok) {
+      console.error("SendGrid", res.status, await res.text());
+      throw new Error();
+    }
   } catch {
     return NextResponse.json({ error: "Falha ao registrar sua solicitação." }, { status: 502 });
   }

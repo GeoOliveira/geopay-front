@@ -24,6 +24,9 @@ Copie `.env.example` para `.env.local`:
 | `GEOPAY_API_URL` | URL do geopay-backend. Se definida, os planos da seção de tarifas vêm de `GET /plans`; senão usa valores de exemplo. |
 | `NEXT_PUBLIC_APP_URL` | URL do painel (links "Entrar" e "Criar conta"). |
 | `NEXT_PUBLIC_DOCS_URL` | URL da documentação da API. |
+| `SENDGRID_API_KEY` | Chave do SendGrid usada para enviar os formulários por e-mail. |
+| `FORMS_FROM_EMAIL` | Remetente verificado no SendGrid (ex.: site@geopay.digital). |
+| `FORMS_TO_CONTATO`, `FORMS_TO_DENUNCIA`, `FORMS_TO_REEMBOLSO` | Destinatários de cada formulário (opcional; padrão: e-mails de suporte e denúncia). |
 
 ## Estrutura
 
