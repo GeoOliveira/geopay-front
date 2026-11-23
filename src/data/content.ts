@@ -55,7 +55,7 @@ export const FAQ = [
 export const LINKS = {
   signup: "https://app.geopay.digital/pre-registration",
   login: "https://app.geopay.digital/",
-  docs: process.env.NEXT_PUBLIC_DOCS_URL ?? "#",
+  docs: process.env.NEXT_PUBLIC_DOCS_URL || "/docs",
 };
 
 // Dados institucionais usados nas páginas legais e de atendimento.

@@ -2,6 +2,13 @@
 
 Site institucional da **Geopay** (geopay.digital) — gateway de pagamento via Pix.
 
+## Documentação Pix
+
+A página `/docs` explica recebimentos, envios, consultas e confirmação de transações Pix,
+com exemplos fictícios baseados no contrato do backend local. Não executa pagamentos.
+Implementação: `src/app/docs/page.tsx`. O link de documentação aponta para `/docs` por padrão;
+`NEXT_PUBLIC_DOCS_URL` permite usar um destino externo quando necessário.
+
 ## Stack
 
 - Next.js 15 (App Router) + TypeScript
