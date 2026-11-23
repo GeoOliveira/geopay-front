@@ -18,9 +18,8 @@ const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&
 const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 
 /**
- * Recebe os formulários do site e envia por e-mail usando a API do SendGrid
- * (o mesmo provedor do geopay-backend).
- * Variáveis: SENDGRID_API_KEY, FORMS_FROM_EMAIL (remetente verificado no SendGrid)
+ * Recebe os formulários do site e envia por e-mail usando a API da Resend.
+ * Variáveis: RESEND_API_KEY, FORMS_FROM_EMAIL (endereço em domínio verificado na Resend)
  * e, opcionalmente, FORMS_TO_CONTATO / FORMS_TO_DENUNCIA / FORMS_TO_REEMBOLSO.
  */
 export async function POST(req: Request) {
@@ -44,7 +43,7 @@ export async function POST(req: Request) {
     if (val) fields.push([k, val]);
   }
 
-  const apiKey = process.env.SENDGRID_API_KEY;
+  const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.FORMS_FROM_EMAIL;
   if (!apiKey || !from) {
     return NextResponse.json({ error: "O envio de formulários ainda não está configurado." }, { status: 503 });
@@ -58,19 +57,23 @@ export async function POST(req: Request) {
   const text = fields.map(([k, v]) => `${LABELS[k] ?? k}: ${v}`).join("\n");
 
   try {
-    const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
+    const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json", "Idempotency-Key": `form-${protocol}` },
       body: JSON.stringify({
-        personalizations: [{ to: [{ email: cfg.to() }] }],
-        from: { email: from, name: "Site Geopay" },
-        ...(isEmail(replyTo) ? { reply_to: { email: replyTo } } : {}),
+        from: from.includes("<") ? from : `Site Geopay <${from}>`,
+        to: [cfg.to()],
+        ...(isEmail(replyTo) ? { reply_to: replyTo } : {}),
         subject: `[${protocol}] ${cfg.subject}`,
-        content: [{ type: "text/plain", value: `Protocolo ${protocol}\n\n${text}` }, { type: "text/html", value: html }],
+        html,
+        text: `Protocolo ${protocol}
+
+${text}`,
+        tags: [{ name: "form", value: form }],
       }),
     });
     if (!res.ok) {
-      console.error("SendGrid", res.status, await res.text());
+      console.error("Resend", res.status, await res.text());
       throw new Error();
     }
   } catch {
