@@ -22,7 +22,6 @@ Copie `.env.example` para `.env.local`:
 | Variável | Uso |
 | --- | --- |
 | `GEOPAY_API_URL` | URL do geopay-backend. Se definida, os planos da seção de tarifas vêm de `GET /plans`; senão usa valores de exemplo. |
-| `NEXT_PUBLIC_APP_URL` | URL do painel (links "Entrar" e "Criar conta"). |
 | `NEXT_PUBLIC_DOCS_URL` | URL da documentação da API. |
 | `RESEND_API_KEY` | Chave da Resend usada para enviar os formulários por e-mail. |
 | `FORMS_FROM_EMAIL` | Remetente em domínio verificado na Resend (ex.: site@geopay.digital). |

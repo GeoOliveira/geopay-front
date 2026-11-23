@@ -53,8 +53,8 @@ export const FAQ = [
 ] as const;
 
 export const LINKS = {
-  signup: process.env.NEXT_PUBLIC_APP_URL ? `${process.env.NEXT_PUBLIC_APP_URL}/cadastro` : "#",
-  login: process.env.NEXT_PUBLIC_APP_URL ? `${process.env.NEXT_PUBLIC_APP_URL}/login` : "#",
+  signup: "https://app.geopay.digital/pre-registration",
+  login: "https://app.geopay.digital/",
   docs: process.env.NEXT_PUBLIC_DOCS_URL ?? "#",
 };
 
