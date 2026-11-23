@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Image from "next/image";
 import { LINKS } from "@/data/content";
 
@@ -6,19 +7,19 @@ export function Header() {
     <>
       <div className="notice">
         ⚡ <b>Novo:</b> plugin oficial para WooCommerce — receba por Pix no checkout da sua loja.{" "}
-        <a href="#integracoes"><u>Saiba mais →</u></a>
+        <Link href="/#integracoes"><u>Saiba mais →</u></Link>
       </div>
       <nav>
         <div className="wrap">
-          <a href="#" className="logo" aria-label="Geopay">
+          <Link href="/" className="logo" aria-label="Geopay">
             <Image src="/logo-geopay.png" alt="Geopay" width={136} height={32} priority />
-          </a>
+          </Link>
           <div className="menu">
-            <a href="#solucoes">Soluções</a>
-            <a href="#dev">Desenvolvedores</a>
-            <a href="#tarifas">Tarifas</a>
-            <a href="#seguranca">Segurança</a>
-            <a href="#faq">Ajuda</a>
+            <Link href="/#solucoes">Soluções</Link>
+            <Link href="/#dev">Desenvolvedores</Link>
+            <Link href="/#tarifas">Tarifas</Link>
+            <Link href="/#seguranca">Segurança</Link>
+            <Link href="/#faq">Ajuda</Link>
           </div>
           <div className="nav-cta">
             <a href={LINKS.login} className="btn btn-ghost">Entrar</a>

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Image from "next/image";
 import { FAQ, LINKS, type Plan } from "@/data/content";
 import { Topo } from "./SvgDefs";
@@ -181,7 +182,7 @@ export function Faq() {
           <div className="help">
             <a href={LINKS.docs}><div>Documentação técnica<small>ENDPOINTS · WEBHOOKS · SANDBOX</small></div>↗</a>
             <a href="#contato"><div>Falar com especialista<small>RESPOSTA EM ATÉ 2H ÚTEIS</small></div>↗</a>
-            <a href="#"><div>Central de ajuda<small>TUTORIAIS E GUIAS</small></div>↗</a>
+            <Link href="/contato"><div>Central de ajuda<small>TUTORIAIS E GUIAS</small></div>↗</Link>
           </div>
         </div>
         <div>
@@ -203,17 +204,17 @@ export function Footer() {
       <div className="wrap">
         <div className="foot">
           <div>
-            <a href="#" className="logo" style={{ marginBottom: 16 }}>
+            <Link href="/" className="logo" style={{ marginBottom: 16 }}>
               <Image src="/logo-geopay.png" alt="Geopay" width={136} height={32} />
-            </a>
+            </Link>
             <p style={{ maxWidth: 300 }}>Gateway de pagamento Pix, conta digital e API para negócios que querem receber sem fricção.</p>
           </div>
-          <div><h5>Produtos</h5><a href="#solucoes">Pix cash-in</a><a href="#solucoes">Pix cash-out</a><a href="#solucoes">Boleto</a><a href="#solucoes">Conta digital</a><a href="#integracoes">WooCommerce</a></div>
+          <div><h5>Produtos</h5><Link href="/#solucoes">Pix cash-in</Link><Link href="/#solucoes">Pix cash-out</Link><Link href="/#solucoes">Boleto</Link><Link href="/#solucoes">Conta digital</Link><Link href="/#integracoes">WooCommerce</Link></div>
           <div><h5>Desenvolvedores</h5><a href={LINKS.docs}>Documentação</a><a href={LINKS.docs}>Referência da API</a><a href={LINKS.docs}>Webhooks</a><a href={LINKS.docs}>Sandbox</a></div>
-          <div><h5>Empresa</h5><a href="#">Sobre</a><a href="#contato">Contato</a></div>
-          <div><h5>Legal</h5><a href="#">Termos de uso</a><a href="#">Privacidade</a><a href="#">Política PLD/FT</a><a href="#">Ouvidoria</a></div>
+          <div><h5>Atendimento</h5><Link href="/contato">Contato</Link><Link href="/denuncia">Denúncia</Link><Link href="/reembolso">Reembolso</Link><Link href="/exclusao-de-conta">Exclusão de conta</Link></div>
+          <div><h5>Legal</h5><Link href="/termos-de-compra">Termos de compra</Link><Link href="/politica-de-privacidade">Política de privacidade</Link></div>
         </div>
-        <div className="legal mono"><span>© {new Date().getFullYear()} Geopay · geopay.digital</span><span>Feito no Brasil 🇧🇷</span></div>
+        <div className="legal mono"><span>© {new Date().getFullYear()} Geopay · CNPJ 51.274.896/0001-38</span><span>Feito no Brasil 🇧🇷</span></div>
         <div className="mega">geopay</div>
       </div>
     </footer>

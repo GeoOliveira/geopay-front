@@ -57,3 +57,13 @@ export const LINKS = {
   login: process.env.NEXT_PUBLIC_APP_URL ? `${process.env.NEXT_PUBLIC_APP_URL}/login` : "#",
   docs: process.env.NEXT_PUBLIC_DOCS_URL ?? "#",
 };
+
+// Dados institucionais usados nas páginas legais e de atendimento.
+export const COMPANY = {
+  name: "Geopay",
+  cnpj: "51.274.896/0001-38",
+  site: "geopay.digital",
+  supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "suporte@geopay.digital",
+  privacyEmail: process.env.NEXT_PUBLIC_PRIVACY_EMAIL ?? "privacidade@geopay.digital",
+  complianceEmail: process.env.NEXT_PUBLIC_COMPLIANCE_EMAIL ?? "denuncia@geopay.digital",
+};
