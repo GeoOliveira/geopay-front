@@ -19,7 +19,7 @@ export function Header() {
             <Link href="/#dev">Desenvolvedores</Link>
             <Link href="/#tarifas">Tarifas</Link>
             <Link href="/#seguranca">Segurança</Link>
-            <Link href="/#faq">Ajuda</Link>
+            <Link href="/contato">Ajuda</Link>
           </div>
           <div className="nav-cta">
             <a href={LINKS.login} className="btn btn-ghost">Entrar</a>
