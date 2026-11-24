@@ -25,7 +25,7 @@ const ITEMS: { art: React.ReactNode; cat: string; title: string; text: string; m
   { art: <span className="mono" style={{ fontSize: 32, color: "var(--lime)" }}>→ R$</span>, cat: "PAGAMENTOS", title: "Pix cash-out", text: "Pague fornecedores e faça saques para qualquer chave Pix, a qualquer hora.", metric: "SAQUE · D+0" },
   { art: <Barcode />, cat: "BOLETO", title: "Boleto registrado", text: "Emita pelo painel ou API, com baixa automática e conciliação.", metric: "REGISTRADO · API" },
   { art: <span className="mono" style={{ fontSize: 13 }}>PJ · <b style={{ color: "var(--lime)" }}>NOMINAL</b> · PF</span>, cat: "CONTA", title: "Conta digital nominal", text: "Conta no seu CPF ou CNPJ, com sócios, representantes e limites configuráveis.", metric: "PF · MEI · PJ" },
-  { art: <span className="mono" style={{ color: "var(--cyan)" }}>POST /webhook 200 ✓</span>, cat: "DESENVOLVEDORES", title: "API & Webhooks", text: "Chaves de API, requisições assinadas e eventos em tempo real para cada transação.", metric: "REST · SWAGGER" },
+  { art: <span className="mono" style={{ color: "var(--cyan)" }}>POST /graphql</span>, cat: "DESENVOLVEDORES", title: "API Pix", text: "Envio e consulta Pix com JWT, e confirmação bancária para conciliar pedidos.", metric: "GRAPHQL · JWT" },
   { art: <span style={{ fontSize: 15 }}>🛒 Pedido #4821 · <b style={{ color: "var(--lime)" }}>Pix aprovado</b></span>, cat: "E-COMMERCE", title: "Checkout WooCommerce", text: "Plugue sua loja WordPress e receba por Pix com métricas por integração.", metric: "PLUGIN OFICIAL" },
 ];
 

@@ -87,6 +87,40 @@ const findRequest = JSON.stringify({
   variables: { input: { authCode: "<AUTHENTICATION_CODE_RETORNADO_NO_ENVIO>" } },
 }, null, 2);
 
+const errorResponse = JSON.stringify({
+  errors: [{
+    code: "PAYMENT.USER_BANK_ACCOUNT_NOT_FOUND",
+    message: "Business Owner bank account not found.",
+    __typename: "Error",
+  }],
+  data: null,
+}, null, 2);
+
+const handleResponse = `const response = await fetch(process.env.GEOPAY_GRAPHQL_URL, {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer " + process.env.GEOPAY_ACCESS_TOKEN,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ query, variables }),
+});
+const body = await response.json();
+if (!response.ok) throw new Error("Falha HTTP: " + response.status);
+if (body.errors?.length) {
+  const error = body.errors[0];
+  const code = error.code ?? error.extensions?.code ?? "GRAPHQL.ERROR";
+  throw new Error(code + ": " + error.message);
+}
+const result = body.data?.findPixByAuth;
+if (!result) throw new Error("Consulta sem resultado.");
+if (result.__typename === "Error") {
+  throw new Error(result.code + ": " + result.message);
+}
+if (result.__typename !== "PixByAuthCode") {
+  throw new Error("Tipo de resposta inesperado.");
+}
+console.log(result.authenticationCode, result.status);`;
+
 function Operation({ type, name, children }: { type: "QUERY" | "MUTATION"; name: string; children: React.ReactNode }) {
   return (
     <div className={styles.endpoint}>
@@ -129,7 +163,7 @@ export default function PixDocsPage() {
               <a href="#receber" className={styles.card}><span>↙ CASH-IN</span><h3>Receber</h3><p>Entenda como a confirmação bancária é relacionada ao pedido e à loja.</p><b>Conhecer o fluxo →</b></a>
               <a href="#enviar" className={styles.card}><span>↗ CASH-OUT</span><h3>Enviar</h3><p>Envie por chave Pix e guarde o código para consultar o resultado.</p><b>Conhecer o fluxo →</b></a>
             </div>
-            <div className={styles.note}><b>Contrato de referência: GraphQL.</b><p>Este guia foi revisado com base na implementação local disponível. Confirme com a equipe o endereço da API e o schema implantado no seu ambiente antes de integrar.</p></div>
+            <div className={styles.note}><b>Contrato de referência: GraphQL.</b><p>Este guia foi revisado com base na implementação local disponível. O endereço e o schema da API em produção ainda precisam de homologação. Solicite à equipe o endpoint completo do ambiente autorizado, incluindo <code>/graphql</code>, antes de integrar.</p></div>
             <p className={styles.caption}>Os exemplos são fictícios e não executam operações. As demonstrações da página inicial não substituem o contrato apresentado neste guia.</p>
           </section>
 
@@ -137,6 +171,7 @@ export default function PixDocsPage() {
             <span className={styles.kicker}>02 / ACESSO E AUTENTICAÇÃO</span>
             <h2>Uma API, operações GraphQL.</h2>
             <p>Envie as operações por <code>POST /graphql</code>, em um corpo JSON com <code>query</code> e <code>variables</code>. Use o endereço base fornecido para seu ambiente.</p>
+            <p>Nos exemplos de código, <code>GEOPAY_GRAPHQL_URL</code> representa o endpoint completo fornecido pela equipe, e <code>GEOPAY_ACCESS_TOKEN</code> representa o JWT da conta. Esses nomes são variáveis da sua integração. Para testes, solicite um ambiente autorizado; esta página não é um sandbox e não realiza chamadas bancárias.</p>
             <Operation type="MUTATION" name="loginBusinessOwner">Recebe e-mail e senha. Quando o resultado é <code>LoggedUserOutput</code>, o campo <code>accessToken</code> contém o JWT usado nas operações protegidas.</Operation>
             <details className={styles.details}><summary>Ver operação de autenticação</summary>
               <Example title="Login · GraphQL">{loginOperation}</Example>
@@ -144,6 +179,9 @@ export default function PixDocsPage() {
             </details>
             <Example title="Cabeçalhos das operações Pix">{"Authorization: Bearer <ACCESS_TOKEN>\nContent-Type: application/json"}</Example>
             <p>O envio e a consulta exigem JWT válido. O backend também utiliza a sessão bancária da conta, mantida no servidor. Ter um JWT não garante que essa sessão bancária esteja disponível.</p>
+            <h3>Validade e recuperação do acesso</h3>
+            <p>Na implementação analisada, o JWT expira em duas horas, e os dados da sessão bancária são armazenados por até duas horas após o login. A sessão do parceiro pode deixar de ser válida antes desse prazo. O campo <code>hasBankAccount</code> informa a existência de conta vinculada; ele não comprova que a sessão bancária está operacional.</p>
+            <p>Se a sessão expirar, autentique novamente para obter outro JWT e restabelecer a sessão bancária. Depois de uma falha ou tempo esgotado no envio, recupere o acesso e consulte a transferência pelo código de autenticação antes de decidir por outra tentativa. Um novo login não desfaz um Pix já solicitado.</p>
             <p>Não envie senha nas operações Pix, nem exponha tokens do parceiro bancário. Este contrato não utiliza versionamento pelo cabeçalho <code>version</code>. Utilize as operações GraphQL deste guia como referência para a integração.</p>
           </section>
 
@@ -165,7 +203,7 @@ export default function PixDocsPage() {
             <h2>Envie por chave Pix.</h2>
             <Operation type="MUTATION" name="sendPixPayment(input: SendPixPaymentRequest!)">Inicia o envio a partir da conta autenticada. O backend consulta a chave destinatária e obtém os dados bancários necessários antes de solicitar a transferência.</Operation>
             <div className={styles.tableWrap}><table><caption>Campos de SendPixPaymentRequest</caption><thead><tr><th scope="col">Campo</th><th scope="col">Contrato</th></tr></thead><tbody>
-              <tr><td><code>amount</code></td><td><code>Float!</code> obrigatório. Valor numérico, sem símbolo de moeda.</td></tr>
+              <tr><td><code>amount</code></td><td><code>Float!</code> obrigatório. Valor positivo em reais, de pelo menos R$ 0,01, com no máximo duas casas decimais e sem símbolo de moeda.</td></tr>
               <tr><td><code>pixKey</code></td><td><code>String!</code> obrigatória. Chave Pix do destinatário.</td></tr>
               <tr><td><code>description</code></td><td>Texto opcional. Padrão: string vazia.</td></tr>
               <tr><td><code>initializationType</code></td><td>Texto opcional, com padrão <code>Key</code>. O fluxo descrito aqui é o envio por chave.</td></tr>
@@ -174,7 +212,7 @@ export default function PixDocsPage() {
             <Example title="Variáveis do envio · JSON">{sendVariables}</Example>
             <p>Não envie <code>sender</code> ou <code>endToEndId</code> no input. O backend monta o remetente a partir da conta autenticada e obtém o identificador na consulta da chave Pix.</p>
             <h3>Como ler o retorno</h3>
-            <p>O resultado é uma união: <code>PixPaymentDone</code> ou <code>Error</code>. Solicite <code>__typename</code> para identificar o caso. O sucesso expõe <code>authenticationCode</code>, <code>amount</code> como texto e <code>recipient</code>.</p>
+            <p>O schema declara a união <code>PixPaymentDone</code> ou <code>Error</code>. O sucesso expõe <code>authenticationCode</code>, <code>amount</code> como texto e <code>recipient</code>. Porém, a classe de erro usada pelo backend deriva de <code>GraphQLError</code>: as falhas desse fluxo podem aparecer no campo <code>errors</code>, com <code>data: null</code>, em vez de retornar como um objeto da união. Verifique <code>errors</code> antes de acessar <code>data</code> ou <code>__typename</code>.</p>
             <div className={styles.note}><b>Guarde o código de autenticação.</b><p>Use o <code>authenticationCode</code> retornado no campo <code>authCode</code> da consulta. A resposta de envio não expõe um campo <code>status</code>; consulte a transferência para acompanhar o estado informado pelo parceiro.</p></div>
           </section>
 
@@ -197,7 +235,7 @@ export default function PixDocsPage() {
             <p>O endpoint <code>POST /webhook</code> recebe uma lista de eventos e exige autenticação específica para webhooks. Ele é destinado à integração bancária, não ao envio de confirmações pelo navegador ou pelo lojista.</p>
             <h3><code>PIX_CASH_IN_WAS_CLEARED</code></h3>
             <p>É o evento Pix tratado pelo worker analisado. Ele localiza o carrinho pelo identificador de conciliação, exige estado <code>PROCESSING</code> e aceita valor recebido com diferença de até R$ 0,10 em relação ao total do carrinho.</p>
-            <p>Quando as verificações passam, o worker atualiza o pedido WooCommerce para <code>completed</code>. Em seguida, grava <code>COMPLETED</code> e <code>paidAt</code> no carrinho local. A fila está configurada para até cinco tentativas de processamento.</p>
+            <p>O recebimento aguarda a confirmação de inclusão dos eventos na fila. Se a inclusão falhar, a requisição falha; o processamento do pedido ocorre depois. Quando as verificações passam, o worker atualiza o pedido WooCommerce para <code>completed</code>. Em seguida, grava <code>COMPLETED</code> e <code>paidAt</code> no carrinho local. A fila está configurada para até cinco tentativas de processamento. A confirmação de inclusão não garante processamento único: reenvios e falhas parciais precisam de conciliação.</p>
             <h3>Estado do pedido e estado bancário</h3>
             <div className={styles.tableWrap}><table><caption>Estados locais de pagamento do pedido</caption><thead><tr><th scope="col">Estado</th><th scope="col">Significado</th></tr></thead><tbody>
               <tr><td><code>PENDING</code></td><td>Pagamento pendente.</td></tr>
@@ -214,11 +252,16 @@ export default function PixDocsPage() {
             <h2>Confira o resultado da operação.</h2>
             <ul className={styles.checklist}>
               <li><b>Erro de transporte:</b> confira o código HTTP e se a resposta pode ser lida como JSON.</li>
-              <li><b>Erro GraphQL:</b> trate o campo <code>errors</code> da resposta. Não considere apenas o status HTTP.</li>
-              <li><b>Erro de negócio:</b> quando <code>__typename</code> for <code>Error</code>, leia <code>code</code> e <code>message</code>. Uma resposta HTTP 200 pode conter uma operação recusada.</li>
+              <li><b>Erro GraphQL ou de negócio:</b> trate primeiro o campo <code>errors</code> da resposta, mesmo com HTTP 200. O formatador local pode expor o código em <code>errors[].code</code>; outros erros podem usar <code>errors[].extensions.code</code>. O campo <code>data</code> pode ser nulo.</li>
+              <li><b>Resultado da união:</b> apenas quando houver dados válidos, confira <code>__typename</code>. Se retornar <code>Error</code>, leia <code>code</code> e <code>message</code>. Esse teste não substitui o tratamento de <code>errors</code>.</li>
               <li><b>Sessão indisponível:</b> confira tanto o JWT quanto a sessão bancária mantida no servidor. As operações Pix dependem das duas.</li>
               <li><b>Tempo esgotado após um envio:</b> não repita a transferência automaticamente. Concilie a operação com a equipe; se houver código de autenticação, use a consulta.</li>
             </ul>
+            <Example title="Falha de sessão bancária · resposta JSON ilustrativa">{errorResponse}</Example>
+            <details className={styles.details}><summary>Ver tratamento de uma consulta em Node.js</summary>
+              <p>Use a operação <code>ConsultarPix</code> e as variáveis da seção de consulta como <code>query</code> e <code>variables</code>. Execute no servidor da sua integração. O exemplo não repete requisições automaticamente.</p>
+              <Example title="Consulta · leitura defensiva da resposta">{handleResponse}</Example>
+            </details>
             <p>O input de <code>sendPixPayment</code> não recebe chave de idempotência e o fluxo analisado não implementa deduplicação de novas chamadas. Uma nova tentativa pode produzir outra transferência.</p>
             <p>Não interprete <code>PixPaymentDone</code>, isoladamente, como uma promessa de estado bancário final: consulte a operação e valide o significado do estado retornado no seu ambiente.</p>
             <div className={styles.helpFooter}><div><b>Vamos validar sua integração?</b><p>Confirme acesso, schema e ambiente de testes com a equipe.</p></div><Link href="/contato" className="btn btn-primary">Falar com a Geopay ↗</Link></div>
