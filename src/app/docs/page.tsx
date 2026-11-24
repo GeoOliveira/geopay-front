@@ -5,50 +5,92 @@ import styles from "./page.module.css";
 
 export const metadata: Metadata = {
   title: "Documentação Pix | Geopay",
-  description: "Entenda como gerar cobranças, enviar Pix e acompanhar a confirmação de transações na Geopay.",
+  description: "Entenda o envio Pix por GraphQL, a consulta por código de autenticação e a confirmação de recebimentos na Geopay.",
   alternates: { canonical: "/docs" },
   openGraph: {
     title: "Documentação Pix | Geopay",
-    description: "Do QR Code à confirmação: conheça os fluxos de transações Pix.",
+    description: "Envio, consulta e confirmação de pagamentos Pix com GraphQL.",
     url: "/docs",
   },
 };
 
 const navigation = [
   ["visao-geral", "Visão geral"],
-  ["autenticacao", "Antes de começar"],
+  ["autenticacao", "Acesso e autenticação"],
   ["receber", "Receber um Pix"],
   ["enviar", "Enviar um Pix"],
-  ["consultar", "Consultar transações"],
+  ["consultar", "Consultar um Pix"],
   ["confirmacao", "Confirmação e estados"],
   ["erros", "Erros e tentativas"],
 ] as const;
 
-const staticQr = JSON.stringify({
-  addressingKey: { type: "EMAIL", value: "recebedor@example.com" },
-  recipientName: "Loja Exemplo",
-  amount: 49.9,
-  location: { city: "Sao Paulo", zipCode: "01001000" },
-}, null, 2);
+const loginOperation = `mutation Entrar($email: String!, $password: String!) {
+  loginBusinessOwner(email: $email, password: $password) {
+    __typename
+    ... on LoggedUserOutput {
+      accessToken
+      hasBankAccount
+    }
+    ... on Error {
+      code
+      message
+    }
+  }
+}`;
 
-const dynamicQr = JSON.stringify({
-  recipientName: "Loja Exemplo",
-  addressingKey: { type: "EMAIL", value: "recebedor@example.com" },
-  singlePayment: true,
-  changeAmountType: "NOT_ALLOWED",
-  amount: 49.9,
-  payer: {
-    name: "Cliente Exemplo",
-    document: "00000000000",
-    type: "CUSTOMER",
-    address: { addressLine: "Rua Exemplo, 100", state: "SP", city: "Sao Paulo", zipCode: "01001000" },
+const sendOperation = `mutation EnviarPix($input: SendPixPaymentRequest!) {
+  sendPixPayment(input: $input) {
+    __typename
+    ... on PixPaymentDone {
+      authenticationCode
+      amount
+      recipient {
+        name
+      }
+    }
+    ... on Error {
+      code
+      message
+    }
+  }
+}`;
+
+const sendVariables = JSON.stringify({
+  input: {
+    amount: 49.9,
+    pixKey: "recebedor@example.com",
+    description: "Pedido exemplo",
+    initializationType: "Key",
   },
 }, null, 2);
 
-function Endpoint({ method, path, children }: { method: "GET" | "POST"; path: string; children: React.ReactNode }) {
+const findOperation = `query ConsultarPix($input: FindPixsByAuthCodeRequest!) {
+  findPixByAuth(input: $input) {
+    __typename
+    ... on PixByAuthCode {
+      authenticationCode
+      endToEndId
+      amount
+      status
+      createdAt
+      updatedAt
+    }
+    ... on Error {
+      code
+      message
+    }
+  }
+}`;
+
+const findRequest = JSON.stringify({
+  query: findOperation,
+  variables: { input: { authCode: "<AUTHENTICATION_CODE_RETORNADO_NO_ENVIO>" } },
+}, null, 2);
+
+function Operation({ type, name, children }: { type: "QUERY" | "MUTATION"; name: string; children: React.ReactNode }) {
   return (
     <div className={styles.endpoint}>
-      <div className={styles.endpointTitle}><span className={method === "GET" ? styles.get : styles.post}>{method}</span><code>{path}</code></div>
+      <div className={styles.endpointTitle}><span className={type === "QUERY" ? styles.get : styles.post}>{type}</span><code>{name}</code></div>
       <p>{children}</p>
     </div>
   );
@@ -66,9 +108,9 @@ function Example({ title, children }: { title: string; children: string }) {
 export default function PixDocsPage() {
   return (
     <PageShell crumb="Documentação" kicker="Guia de integração · Pix"
-      title={<>Do primeiro QR Code<br />ao <span className="hl">Pix confirmado.</span></>}
-      lead="Receba, envie e acompanhe pagamentos. Entenda cada etapa da transação e saiba quando uma operação está realmente concluída."
-      meta={["RECEBIMENTO E ENVIO", "API REST", "PT-BR"]}>
+      title={<>Do envio à consulta.<br /><span className="hl">Entenda seu Pix.</span></>}
+      lead="Conheça as operações GraphQL para enviar e consultar Pix, e acompanhe como os recebimentos são conciliados com os pedidos."
+      meta={["ENVIO E CONFIRMAÇÃO", "GRAPHQL", "PT-BR"]}>
       <div className={styles.layout}>
         <aside className={styles.sidebar}>
           <p>NESTE GUIA</p>
@@ -82,105 +124,104 @@ export default function PixDocsPage() {
           <section id="visao-geral" className={styles.section}>
             <span className={styles.kicker}>01 / VISÃO GERAL</span>
             <h2>Um fluxo, duas direções.</h2>
-            <p>No recebimento, você gera uma cobrança e acompanha o pagamento. No envio, você informa os dados da operação e acompanha sua liquidação.</p>
+            <p>O envio Pix é iniciado pela operação <code>sendPixPayment</code>. A consulta <code>findPixByAuth</code> acompanha uma transferência pelo código de autenticação. No recebimento, a confirmação bancária é processada para conciliar o pedido relacionado.</p>
             <div className={styles.cards}>
-              <a href="#receber" className={styles.card}><span>↙ CASH-IN</span><h3>Receber</h3><p>Gere um QR Code estático ou dinâmico para apresentar ao pagador.</p><b>Conhecer o fluxo →</b></a>
-              <a href="#enviar" className={styles.card}><span>↗ CASH-OUT</span><h3>Enviar</h3><p>Inicie uma transferência Pix e consulte seu resultado.</p><b>Conhecer o fluxo →</b></a>
+              <a href="#receber" className={styles.card}><span>↙ CASH-IN</span><h3>Receber</h3><p>Entenda como a confirmação bancária é relacionada ao pedido e à loja.</p><b>Conhecer o fluxo →</b></a>
+              <a href="#enviar" className={styles.card}><span>↗ CASH-OUT</span><h3>Enviar</h3><p>Envie por chave Pix e guarde o código para consultar o resultado.</p><b>Conhecer o fluxo →</b></a>
             </div>
-            <div className={styles.note}><b>Gerar uma cobrança não significa receber um pagamento.</b><p>A confirmação financeira acontece depois, quando o parceiro bancário comunica a liquidação à Geopay.</p></div>
-            <p className={styles.caption}>Este guia descreve as rotas do backend analisado. Os exemplos são fictícios e não executam transações. Os indicadores e o botão “Executar” da página inicial são demonstrações.</p>
+            <div className={styles.note}><b>Contrato de referência: GraphQL.</b><p>Este guia foi revisado com base na implementação local disponível. Confirme com a equipe o endereço da API e o schema implantado no seu ambiente antes de integrar.</p></div>
+            <p className={styles.caption}>Os exemplos são fictícios e não executam operações. As demonstrações da página inicial não substituem o contrato apresentado neste guia.</p>
           </section>
 
           <section id="autenticacao" className={styles.section}>
-            <span className={styles.kicker}>02 / ANTES DE COMEÇAR</span>
-            <h2>Acesso à sua conta.</h2>
-            <p>As rotas Pix deste guia usam uma sessão autenticada, com token JWT no cabeçalho <code>Authorization</code>. O token de pré-cadastro não dá acesso às operações Pix.</p>
-            <Example title="Cabeçalhos da requisição">{"Authorization: Bearer <TOKEN_DA_SESSAO>\nContent-Type: application/json"}</Example>
-            <p>Use o endereço da API fornecido para seu ambiente. As rotas abaixo são relativas a esse endereço. Nunca exponha credenciais do parceiro bancário ou chaves privadas no navegador.</p>
-            <div className={styles.note}><b>Qual contrato seguir?</b><p>O backend analisado expõe <code>/pix/generate-dynamic-qr-code</code>, por exemplo. A rota <code>/v1/pix/qr-code</code> e os cabeçalhos <code>x-api-key</code> e <code>x-signature</code> apresentados na vitrine do site são ilustrativos e não definem o contrato destas rotas.</p></div>
-            <p className={styles.caption}>A versão é selecionada pelo cabeçalho <code>version</code>; sem ele, a aplicação utiliza o valor padrão <code>legacy</code>. Valide com a equipe o contrato implantado no seu ambiente.</p>
+            <span className={styles.kicker}>02 / ACESSO E AUTENTICAÇÃO</span>
+            <h2>Uma API, operações GraphQL.</h2>
+            <p>Envie as operações por <code>POST /graphql</code>, em um corpo JSON com <code>query</code> e <code>variables</code>. Use o endereço base fornecido para seu ambiente.</p>
+            <Operation type="MUTATION" name="loginBusinessOwner">Recebe e-mail e senha. Quando o resultado é <code>LoggedUserOutput</code>, o campo <code>accessToken</code> contém o JWT usado nas operações protegidas.</Operation>
+            <details className={styles.details}><summary>Ver operação de autenticação</summary>
+              <Example title="Login · GraphQL">{loginOperation}</Example>
+              <Example title="Variáveis do login · JSON">{JSON.stringify({ email: "lojista@example.com", password: "<SENHA_DA_CONTA>" }, null, 2)}</Example>
+            </details>
+            <Example title="Cabeçalhos das operações Pix">{"Authorization: Bearer <ACCESS_TOKEN>\nContent-Type: application/json"}</Example>
+            <p>O envio e a consulta exigem JWT válido. O backend também utiliza a sessão bancária da conta, mantida no servidor. Ter um JWT não garante que essa sessão bancária esteja disponível.</p>
+            <p>Não envie senha nas operações Pix, nem exponha tokens do parceiro bancário. Este contrato não utiliza versionamento pelo cabeçalho <code>version</code>. Utilize as operações GraphQL deste guia como referência para a integração.</p>
           </section>
 
           <section id="receber" className={styles.section}>
             <span className={styles.kicker}>03 / RECEBIMENTO</span>
-            <h2>Da cobrança ao pagamento.</h2>
+            <h2>Relacione pagamento e pedido.</h2>
             <ol className={styles.steps}>
-              <li><b>Gere a cobrança.</b><p>Informe a chave recebedora e os dados exigidos pelo tipo de QR Code.</p></li>
-              <li><b>Apresente o QR Code ao cliente.</b><p>Use o conteúdo retornado pela API. O backend também registra a cobrança para consulta.</p></li>
-              <li><b>O cliente paga no banco dele.</b><p>Exibir ou copiar o código ainda não confirma a transferência.</p></li>
-              <li><b>Acompanhe a confirmação.</b><p>Após o evento de liquidação, a Geopay registra a transação e atualiza o QR Code relacionado.</p></li>
+              <li><b>O cliente realiza o pagamento Pix.</b><p>O pedido precisa estar relacionado ao identificador de pagamento utilizado pela integração.</p></li>
+              <li><b>A Geopay recebe a confirmação bancária.</b><p>O evento Pix de liquidação entra em uma fila para processamento.</p></li>
+              <li><b>O processamento confere o pedido.</b><p>O identificador de conciliação localiza o carrinho, que deve estar em processamento. O valor recebido também é conferido.</p></li>
+              <li><b>A loja e o registro local são atualizados.</b><p>Após a atualização do pedido WooCommerce, o carrinho é marcado como concluído e recebe a data de pagamento.</p></li>
             </ol>
-            <h3>QR Code estático</h3>
-            <Endpoint method="POST" path="/pix/generate-static-qr-code">Gera um QR Code com chave recebedora, nome e localização. O valor é opcional; quando informado, deve ser positivo.</Endpoint>
-            <Example title="Corpo da cobrança estática · JSON">{staticQr}</Example>
-            <p>As chaves podem ser do tipo <code>EMAIL</code>, <code>CPF</code>, <code>CNPJ</code>, <code>PHONE</code> ou <code>EVP</code>. Os dados do exemplo devem ser substituídos por dados válidos da conta.</p>
-            <h3>QR Code dinâmico</h3>
-            <Endpoint method="POST" path="/pix/generate-dynamic-qr-code">Permite informar pagador, uso único e alteração do valor. Com <code>changeAmountType: NOT_ALLOWED</code>, o campo <code>amount</code> é obrigatório.</Endpoint>
-            <details className={styles.details}><summary>Ver exemplo de cobrança dinâmica</summary><Example title="Corpo da cobrança dinâmica · JSON">{dynamicQr}</Example><p>O documento é fictício. <code>singlePayment</code> define o uso único. A expiração opcional usa <code>expiresAt</code>, e não <code>expiresIn</code>.</p></details>
-            <h3>Como relacionar a cobrança ao pagamento</h3>
-            <p>O campo <code>conciliationId</code> identifica a cobrança na conciliação. Se omitido, o backend gera um identificador. Quando informado, o estático exige 25 caracteres alfanuméricos; o dinâmico, de 26 a 35.</p>
-            <p>As operações consultam a política de tarifas do plano antes de chamar o parceiro bancário. Não use os valores demonstrativos da página inicial como confirmação da tarifa contratada.</p>
+            <div className={styles.note}><b>Geração de QR Code</b><p>Não há operação de emissão de QR Code estático ou dinâmico exposta no contrato analisado. Este guia documenta a confirmação de recebimentos; não fornece um endpoint de criação de cobrança.</p></div>
+            <p>O processamento relaciona <code>data.channel.receiverReconciliationId</code> do evento bancário ao <code>paymentIdentifier</code> do carrinho. Esses campos pertencem à conciliação do recebimento, não à entrada de <code>sendPixPayment</code>.</p>
           </section>
 
           <section id="enviar" className={styles.section}>
             <span className={styles.kicker}>04 / ENVIO</span>
-            <h2>Inicie. Depois confirme.</h2>
-            <Endpoint method="GET" path="/pix/validate-key/:key">Consulta os dados de uma chave Pix antes do envio. Confira o destinatário retornado.</Endpoint>
-            <Endpoint method="POST" path="/pix/decode-qr-code">Recebe <code>{'{ "code": "<PIX_COPIA_E_COLA>" }'}</code> para decodificar um QR Code. Utilize os dados retornados, incluindo o identificador de ponta a ponta quando aplicável.</Endpoint>
-            <Endpoint method="POST" path="/pix/transfer">Inicia a transferência. A resposta local é registrada como <code>PENDING</code>; o evento de conclusão atualiza a operação para <code>DONE</code>.</Endpoint>
-            <div className={styles.tableWrap}><table><caption>Campos do envio Pix</caption><thead><tr><th scope="col">Campo</th><th scope="col">Uso</th></tr></thead><tbody>
-              <tr><td><code>amount</code></td><td>Valor numérico da transferência.</td></tr>
-              <tr><td><code>initializationType</code></td><td><code>Key</code>, <code>StaticQrCode</code>, <code>DynamicQrCode</code> ou <code>Manual</code>, conforme o contrato e a operação.</td></tr>
-              <tr><td><code>sender</code></td><td>Nome, documento e conta do remetente. O número da conta deve corresponder à sessão.</td></tr>
-              <tr><td><code>pixKey</code></td><td>Chave do destinatário no envio por chave.</td></tr>
-              <tr><td><code>endToEndId</code></td><td>Identificador obtido no fluxo de consulta ou decodificação, conforme a operação.</td></tr>
-              <tr><td><code>description</code></td><td>Descrição opcional.</td></tr>
+            <h2>Envie por chave Pix.</h2>
+            <Operation type="MUTATION" name="sendPixPayment(input: SendPixPaymentRequest!)">Inicia o envio a partir da conta autenticada. O backend consulta a chave destinatária e obtém os dados bancários necessários antes de solicitar a transferência.</Operation>
+            <div className={styles.tableWrap}><table><caption>Campos de SendPixPaymentRequest</caption><thead><tr><th scope="col">Campo</th><th scope="col">Contrato</th></tr></thead><tbody>
+              <tr><td><code>amount</code></td><td><code>Float!</code> obrigatório. Valor numérico, sem símbolo de moeda.</td></tr>
+              <tr><td><code>pixKey</code></td><td><code>String!</code> obrigatória. Chave Pix do destinatário.</td></tr>
+              <tr><td><code>description</code></td><td>Texto opcional. Padrão: string vazia.</td></tr>
+              <tr><td><code>initializationType</code></td><td>Texto opcional, com padrão <code>Key</code>. O fluxo descrito aqui é o envio por chave.</td></tr>
             </tbody></table></div>
-            <p>No objeto <code>sender.account</code>, use <code>accountBranch</code> e <code>accountNumber</code>. Para envio por chave, o backend também exige <code>type</code>. Confirme a modalidade e os campos com a equipe antes de integrar.</p>
-            <div className={styles.note}><b>Resposta recebida não é liquidação confirmada.</b><p>Guarde o ID da operação e consulte o estado. Não apresente “Pix concluído” enquanto a transferência estiver pendente.</p></div>
+            <Example title="Envio Pix · GraphQL">{sendOperation}</Example>
+            <Example title="Variáveis do envio · JSON">{sendVariables}</Example>
+            <p>Não envie <code>sender</code> ou <code>endToEndId</code> no input. O backend monta o remetente a partir da conta autenticada e obtém o identificador na consulta da chave Pix.</p>
+            <h3>Como ler o retorno</h3>
+            <p>O resultado é uma união: <code>PixPaymentDone</code> ou <code>Error</code>. Solicite <code>__typename</code> para identificar o caso. O sucesso expõe <code>authenticationCode</code>, <code>amount</code> como texto e <code>recipient</code>.</p>
+            <div className={styles.note}><b>Guarde o código de autenticação.</b><p>Use o <code>authenticationCode</code> retornado no campo <code>authCode</code> da consulta. A resposta de envio não expõe um campo <code>status</code>; consulte a transferência para acompanhar o estado informado pelo parceiro.</p></div>
           </section>
 
           <section id="consultar" className={styles.section}>
             <span className={styles.kicker}>05 / ACOMPANHAMENTO</span>
-            <h2>Consulte a fonte da confirmação.</h2>
-            <Endpoint method="GET" path="/pix/qr-codes">Lista os QR Codes da conta autenticada, separados em <code>staticQrCodes</code> e <code>dynamicQrCodes</code>.</Endpoint>
-            <Endpoint method="GET" path="/pix/qr-code/:id">Consulta um QR Code pelo ID local, limitado à conta da sessão.</Endpoint>
-            <Endpoint method="GET" path="/transactions?page=1&limit=10&type=Pix">Lista as transações Pix da conta. <code>page</code> e <code>limit</code> são obrigatórios. Há filtros opcionais de data, ordem e origem.</Endpoint>
-            <Endpoint method="GET" path="/transactions/:id">Consulta os detalhes de uma transação da conta autenticada.</Endpoint>
-            <Example title="Exemplo de consulta · cURL">{'curl "<BASE_DA_API>/transactions?page=1&limit=10&type=Pix" \\\n  -H "Authorization: Bearer <TOKEN_DA_SESSAO>"'}</Example>
-            <p>O ID local da transação, o ID local do QR Code, o <code>conciliationId</code> e o <code>endToEndId</code> têm funções diferentes. Guarde cada identificador no campo correspondente.</p>
+            <h2>Consulte pelo código de autenticação.</h2>
+            <Operation type="QUERY" name="findPixByAuth(input: FindPixsByAuthCodeRequest!)">Recebe <code>authCode</code> e consulta a transferência no parceiro bancário, utilizando a conta da sessão.</Operation>
+            <Example title="Consulta Pix · GraphQL">{findOperation}</Example>
+            <Example title="Variáveis da consulta · JSON">{JSON.stringify({ input: { authCode: "<AUTHENTICATION_CODE_RETORNADO_NO_ENVIO>" } }, null, 2)}</Example>
+            <details className={styles.details}><summary>Ver corpo HTTP completo da consulta</summary><Example title="POST /graphql · JSON">{findRequest}</Example></details>
+            <p>Em caso de sucesso, o tipo retornado é <code>PixByAuthCode</code>. O campo <code>status</code> é texto vindo do parceiro; o contrato não define um enum de estados bancários. O <code>amount</code> dessa consulta é uma string formatada em reais, não um número para cálculos.</p>
+            <p><code>authenticationCode</code> identifica a operação consultada. <code>endToEndId</code> identifica o Pix de ponta a ponta, e <code>correlationId</code> auxilia o rastreamento. Não use esses identificadores como se fossem intercambiáveis.</p>
+            <Operation type="QUERY" name="listPixContacts">Consulta contatos Pix da conta. Não representa um extrato nem substitui a consulta de uma transferência.</Operation>
           </section>
 
           <section id="confirmacao" className={styles.section}>
             <span className={styles.kicker}>06 / CONFIRMAÇÃO</span>
-            <h2>O evento fecha o ciclo.</h2>
-            <div className={styles.flow} aria-label="Fluxo da confirmação"><span>Parceiro bancário</span><span aria-hidden="true">→</span><span>Webhook Geopay</span><span aria-hidden="true">→</span><span>Transação atualizada</span><span aria-hidden="true">→</span><span>Consulta na API</span></div>
-            <p>Os eventos abaixo são recebidos pela Geopay a partir do parceiro bancário. Eles não representam um serviço de webhook de saída configurável pelo lojista neste guia.</p>
-            <div className={styles.tableWrap}><table><caption>Eventos e efeito no registro financeiro</caption><thead><tr><th scope="col">Evento</th><th scope="col">Efeito</th></tr></thead><tbody>
-              <tr><td><code>pixCashInWasCleared</code></td><td>Registra o recebimento como <code>DONE</code>. Para QR Code conciliado, marca a cobrança como <code>PAID</code>.</td></tr>
-              <tr><td><code>pixCashOutWasCompleted</code></td><td>Localiza a saída pelo código de autenticação e atualiza para <code>DONE</code>.</td></tr>
-              <tr><td><code>pixCashOutWasCanceled</code></td><td>Marca uma saída ainda não concluída como <code>CANCELED</code> e registra o motivo.</td></tr>
-              <tr><td><code>pixCashOutWasUndone</code></td><td>Marca uma saída ainda não concluída como <code>UNDONE</code> e registra o motivo.</td></tr>
-              <tr><td><code>pixRefundWasCleared</code></td><td>Registra uma transação de devolução com estado <code>REFUND</code>.</td></tr>
+            <h2>O evento concilia o recebimento.</h2>
+            <div className={styles.flow} aria-label="Fluxo de confirmação do recebimento Pix"><span>Parceiro bancário</span><span aria-hidden="true">→</span><span>Webhook autenticado</span><span aria-hidden="true">→</span><span>Fila de processamento</span><span aria-hidden="true">→</span><span>Pedido conciliado</span></div>
+            <p>O endpoint <code>POST /webhook</code> recebe uma lista de eventos e exige autenticação específica para webhooks. Ele é destinado à integração bancária, não ao envio de confirmações pelo navegador ou pelo lojista.</p>
+            <h3><code>PIX_CASH_IN_WAS_CLEARED</code></h3>
+            <p>É o evento Pix tratado pelo worker analisado. Ele localiza o carrinho pelo identificador de conciliação, exige estado <code>PROCESSING</code> e aceita valor recebido com diferença de até R$ 0,10 em relação ao total do carrinho.</p>
+            <p>Quando as verificações passam, o worker atualiza o pedido WooCommerce para <code>completed</code>. Em seguida, grava <code>COMPLETED</code> e <code>paidAt</code> no carrinho local. A fila está configurada para até cinco tentativas de processamento.</p>
+            <h3>Estado do pedido e estado bancário</h3>
+            <div className={styles.tableWrap}><table><caption>Estados locais de pagamento do pedido</caption><thead><tr><th scope="col">Estado</th><th scope="col">Significado</th></tr></thead><tbody>
+              <tr><td><code>PENDING</code></td><td>Pagamento pendente.</td></tr>
+              <tr><td><code>PROCESSING</code></td><td>Pagamento em processamento; é o estado exigido para a conciliação Pix pelo worker.</td></tr>
+              <tr><td><code>COMPLETED</code></td><td>Pedido marcado como pago após o processamento da confirmação.</td></tr>
+              <tr><td><code>CANCELLED</code></td><td>Pedido cancelado. Sua presença no modelo não significa que o worker Pix execute essa transição.</td></tr>
             </tbody></table></div>
-            <p>O evento <code>pixCashInWasReceived</code> apenas registra o recebimento da notificação em log no código analisado. Ele não é a confirmação de liquidação.</p>
-            <h3>Estado da cobrança ≠ estado da transação</h3>
-            <p>QR Codes possuem os estados <code>PENDING</code>, <code>PAID</code>, <code>CANCELED</code> e <code>EXPIRED</code>. Esses são os valores previstos no modelo; a presença de um estado não garante uma rotina automática de transição. Para transações, use o estado financeiro retornado pela consulta.</p>
-            <p>Quando a cobrança está vinculada a um carrinho WooCommerce, o processamento da confirmação também atualiza o carrinho relacionado para concluído.</p>
+            <p>Esses estados são do pedido e não definem os valores de <code>status</code> retornados por <code>findPixByAuth</code>. O worker analisado não trata eventos Pix de saída, cancelamento, desfazimento ou devolução.</p>
+            <p>Receber a requisição HTTP do webhook não comprova que o pedido já foi conciliado: o processamento acontece na fila e pode falhar. Este contrato também não define um webhook de saída configurável para cada lojista.</p>
           </section>
 
           <section id="erros" className={styles.section}>
             <span className={styles.kicker}>07 / ERROS E TENTATIVAS</span>
-            <h2>Antes de tentar outra vez.</h2>
+            <h2>Confira o resultado da operação.</h2>
             <ul className={styles.checklist}>
-              <li><b>Sessão inválida ou expirada:</b> autentique novamente. As operações também dependem da sessão bancária mantida no servidor.</li>
-              <li><b>Acesso negado:</b> verifique se a conta está habilitada e se o remetente corresponde à sessão.</li>
-              <li><b>Dados inválidos:</b> confira campos obrigatórios, tipos de chave, valores e identificadores de conciliação.</li>
-              <li><b>Tempo esgotado ou falha de conexão:</b> consulte a operação antes de repetir um envio. A ausência de resposta não comprova que o banco deixou de processá-lo.</li>
-              <li><b>Pagamento ainda pendente:</b> acompanhe a consulta e procure o suporte com os identificadores da operação.</li>
+              <li><b>Erro de transporte:</b> confira o código HTTP e se a resposta pode ser lida como JSON.</li>
+              <li><b>Erro GraphQL:</b> trate o campo <code>errors</code> da resposta. Não considere apenas o status HTTP.</li>
+              <li><b>Erro de negócio:</b> quando <code>__typename</code> for <code>Error</code>, leia <code>code</code> e <code>message</code>. Uma resposta HTTP 200 pode conter uma operação recusada.</li>
+              <li><b>Sessão indisponível:</b> confira tanto o JWT quanto a sessão bancária mantida no servidor. As operações Pix dependem das duas.</li>
+              <li><b>Tempo esgotado após um envio:</b> não repita a transferência automaticamente. Concilie a operação com a equipe; se houver código de autenticação, use a consulta.</li>
             </ul>
-            <p>O backend registra um <code>idempotencyKey</code>, mas este guia não promete deduplicação de novas chamadas de transferência. Não reenvie uma operação financeira automaticamente sem conciliação.</p>
-            <div className={styles.helpFooter}><div><b>Vamos validar sua integração?</b><p>Confirme acesso, contrato da API e ambiente de testes com a equipe.</p></div><Link href="/contato" className="btn btn-primary">Falar com a Geopay ↗</Link></div>
+            <p>O input de <code>sendPixPayment</code> não recebe chave de idempotência e o fluxo analisado não implementa deduplicação de novas chamadas. Uma nova tentativa pode produzir outra transferência.</p>
+            <p>Não interprete <code>PixPaymentDone</code>, isoladamente, como uma promessa de estado bancário final: consulte a operação e valide o significado do estado retornado no seu ambiente.</p>
+            <div className={styles.helpFooter}><div><b>Vamos validar sua integração?</b><p>Confirme acesso, schema e ambiente de testes com a equipe.</p></div><Link href="/contato" className="btn btn-primary">Falar com a Geopay ↗</Link></div>
           </section>
         </article>
       </div>
