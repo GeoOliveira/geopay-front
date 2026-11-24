@@ -7,7 +7,7 @@ export function HowItWorks() {
   const steps = [
     ["~2 min", "Crie sua conta", "CPF ou CNPJ, e-mail e telefone validados na hora por SMS."],
     ["~3 min", "Verifique a identidade", "Envie documentos e selfie. KYC automatizado e análise cadastral."],
-    ["~1 min", "Escolha o plano", "Cadastre suas chaves Pix, defina limites e gere sua chave de API."],
+    ["~1 min", "Escolha o plano", "Confira as condições da conta e solicite acesso à integração."],
     ["agora", "Comece a receber", "Cobre pelo painel, pela API ou pelo checkout da sua loja."],
   ];
   return (
@@ -34,8 +34,8 @@ export function HowItWorks() {
 export function Integrations() {
   const items = [
     { lg: "Wo", bg: "#7f54b3", color: "#fff", h: "WooCommerce", p: "Pix no checkout da sua loja WordPress.", soon: false },
-    { lg: "{ }", bg: "var(--ink-4)", color: "var(--lime)", h: "API REST", p: "Qualquer linguagem, qualquer stack.", soon: false },
-    { lg: "⇄", bg: "var(--ink-4)", color: "var(--cyan)", h: "Webhooks", p: "Eventos de pagamento no seu servidor.", soon: false },
+    { lg: "{ }", bg: "var(--ink-4)", color: "var(--lime)", h: "API GraphQL", p: "Envio e consulta Pix com autenticação JWT.", soon: false },
+    { lg: "⇄", bg: "var(--ink-4)", color: "var(--cyan)", h: "Conciliação", p: "Confirmações bancárias relacionadas aos pedidos.", soon: false },
     { lg: "+", bg: "var(--ink-4)", color: "var(--muted)", h: "Outras plataformas", p: "Shopify, Nuvemshop e mais.", soon: true },
   ];
   return (
@@ -65,7 +65,8 @@ export function Pricing({ plans }: { plans: Plan[] }) {
       <div className="wrap">
         <div className="head" style={{ justifyContent: "center", textAlign: "center", flexDirection: "column", alignItems: "center" }}>
           <div><span className="eyebrow"><span className="n">06</span> Tarifas</span><h2>Preço justo.<br />Sem letra miúda.</h2></div>
-          <p className="lead" style={{ maxWidth: 520 }}>Sem mensalidade, sem taxa de adesão. Você paga apenas pelo que recebe.</p>
+          <p className="lead" style={{ maxWidth: 520 }}>Confirme tarifas, limites e recursos disponíveis com a equipe. As condições dependem da contratação.</p>
+          {plans.some((plan) => plan.illustrative) ? <p>Valores de exemplo para apresentação. Não representam uma oferta contratada.</p> : null}
         </div>
         <div className="price-grid">
           {plans.map((p) => (
@@ -86,10 +87,10 @@ export function Pricing({ plans }: { plans: Plan[] }) {
 export function Compare() {
   const rows: [string, string, string, boolean?][] = [
     ["Dinheiro na conta", "Na hora (D+0)", "D+30 ou antecipação paga"],
-    ["Taxa por venda", "A partir de R$ 0,49", "Até 4,99% + aluguel"],
+    ["Taxa por venda", "Conforme contratação", "Conforme o fornecedor"],
     ["Chargeback", "Não existe no Pix", "Risco constante"],
     ["Conta nominal no seu CNPJ", "✓ Sim", "✕ Conta bolsão", true],
-    ["API e webhooks", "✓ Inclusos", "Pago à parte"],
+    ["Acesso à API", "Mediante habilitação", "Conforme o fornecedor"],
     ["Mensalidade", "R$ 0", "R$ 30 – R$ 150"],
   ];
   return (
@@ -133,7 +134,7 @@ export function Security() {
           <span className="orb" style={{ top: "30%", right: "-2%" }}>KYC</span>
           <span className="orb" style={{ bottom: "22%", right: "4%" }}>PLD/FT</span>
           <span className="orb" style={{ bottom: "6%", left: "20%" }}>LGPD</span>
-          <span className="orb" style={{ top: "40%", left: "-4%" }}>HMAC</span>
+          <span className="orb" style={{ top: "40%", left: "-4%" }}>JWT</span>
         </div>
         <div>
           <span className="eyebrow"><span className="n">08</span> Segurança</span>
@@ -180,7 +181,7 @@ export function Faq() {
           <h2>Tudo o que você quer saber.</h2>
           <p className="lead">Não achou sua pergunta? Fale com a gente.</p>
           <div className="help">
-            <a href={LINKS.docs}><div>Documentação técnica<small>ENDPOINTS · WEBHOOKS · SANDBOX</small></div>↗</a>
+            <a href={LINKS.docs}><div>Documentação técnica<small>GRAPHQL · PIX · CONCILIAÇÃO</small></div>↗</a>
             <a href="#contato"><div>Falar com especialista<small>RESPOSTA EM ATÉ 2H ÚTEIS</small></div>↗</a>
             <Link href="/contato"><div>Central de ajuda<small>TUTORIAIS E GUIAS</small></div>↗</Link>
           </div>
@@ -210,7 +211,7 @@ export function Footer() {
             <p style={{ maxWidth: 300 }}>Gateway de pagamento Pix, conta digital e API para negócios que querem receber sem fricção.</p>
           </div>
           <div><h5>Produtos</h5><Link href="/#solucoes">Pix cash-in</Link><Link href="/#solucoes">Pix cash-out</Link><Link href="/#solucoes">Boleto</Link><Link href="/#solucoes">Conta digital</Link><Link href="/#integracoes">WooCommerce</Link></div>
-          <div><h5>Desenvolvedores</h5><a href={LINKS.docs}>Documentação</a><a href={LINKS.docs}>Referência da API</a><a href={LINKS.docs}>Webhooks</a><a href={LINKS.docs}>Sandbox</a></div>
+          <div><h5>Desenvolvedores</h5><a href={LINKS.docs}>Documentação</a><a href={LINKS.docs}>Referência da API</a><a href={`${LINKS.docs}#confirmacao`}>Confirmação Pix</a><a href="/contato">Solicitar acesso</a></div>
           <div><h5>Atendimento</h5><Link href="/contato">Contato</Link><Link href="/denuncia">Denúncia</Link><Link href="/reembolso">Reembolso</Link><Link href="/exclusao-de-conta">Exclusão de conta</Link></div>
           <div><h5>Legal</h5><Link href="/termos-de-compra">Termos de compra</Link><Link href="/politica-de-privacidade">Política de privacidade</Link></div>
         </div>
