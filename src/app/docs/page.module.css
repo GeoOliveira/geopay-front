@@ -13,6 +13,7 @@
 .section h2{font-size:clamp(28px,3.2vw,42px);line-height:1.12;margin:14px 0 20px}
 .section h3{font-size:21px;margin:32px 0 14px;letter-spacing:-.02em}
 .section p{color:#a7b2c8;margin-bottom:18px;line-height:1.75}
+.section p a{color:var(--lime);text-decoration:underline;text-underline-offset:3px}
 .section code{font-family:var(--font-mono),monospace;font-size:.82em;overflow-wrap:anywhere;color:var(--cyan)}
 .cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:26px 0}
 .card{border:1px solid var(--line-2);border-radius:18px;padding:24px;background:var(--ink-2);transition:border-color .2s}
